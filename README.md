@@ -1,56 +1,65 @@
-# Welcome to your Expo app 👋
+<div align="center">
+  <h1 align="center">🛵 تطبيق التوصيل وإدارة الطلبات الحية (CulinaShare)</h1>
+  <p align="center">
+    تطبيق عصري مبني بـ <b>React Native (Expo)</b> و <b>Supabase</b> لتلبية احتياجات العملاء والإدارة الذكية للطلبات.
+    <br />
+    <br />
+    <a href="https://expo.dev/">Expo</a>
+    ·
+    <a href="https://supabase.com/">Supabase</a>
+    ·
+    <a href="https://www.nativewind.dev/">NativeWind</a>
+    ·
+    <a href="https://vercel.com/">Vercel</a>
+  </p>
+</div>
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## ✨ نظرة عامة
+تم تصميم وتطوير هذا المشروع ليكون حلاً شاملاً لإدارة مطاعم التوصيل وتتبع الطلبات. بفضل استخدام تقنية **Expo for Web**، يعمل التطبيق بسلاسة على الويب (كدليل حي للمطعم) وعلى الهواتف كتطبيق أندرويد و iOS (Cross-platform).
 
-## Get started
+## 🚀 المميزات الأساسية (Features)
+- 🔐 **نظام مصادقة متكامل:** دخول آمن للإدارة والعملاء مدعوم من `Supabase Auth` مع حماية ذكية للمسارات (Route Guards).
+- 📱 **واجهات العملاء (Client App):**
+  - استعراض ديناميكي لقائمة الطعام (المنيو).
+  - سلة مشتريات تفاعلية لحساب الإجمالي المباشر.
+- ⚙️ **لوحة التحكم (Admin Dashboard):**
+  - لوحة إحصائيات حية (المبيعات، الطلبات المكتملة، السائقين المتاحين).
+  - نظام تبويبات متقدم لإدارة الطلبات الواردة (واردة، تجهيز، توصيل).
+- 🎨 **تصميم عصري:** واجهات مستخدم مريحة للعين (Glassmorphism & Clean UI) تم بناؤها باستخدام `NativeWind` لضمان تطابق كلاسات `TailwindCSS`.
 
-1. Install dependencies
+## 🛠 التكنولوجيا المستخدمة (Tech Stack)
+- **Front-end:** React Native, Expo, Expo Router
+- **Styling:** NativeWind (Tailwind CSS for React Native)
+- **Back-end & Database:** Supabase (PostgreSQL, Auth, RLS)
+- **Deployment & CI/CD:** Vercel (Auto-Deployment from GitHub)
 
-   ```bash
-   npm install
-   ```
+## 📁 الهيكلة التنظيمية لمجلدات المشروع
+يحتوي المشروع على مجلد `docs` المسمى بـ **"عقل المشروع"** والذي يضم التوثيق الهندسي الدقيق (يرجى مراجعته لفهم أعمق للبرمجة):
+- `docs/1_ARCHITECTURE.md`: الهيكلة التقنية.
+- `docs/2_DATABASE_SUPABASE.md`: هيكل الجداول في قاعدة البيانات.
+- `docs/3_AUTH_FLOW.md`: مسارات تسجيل الدخول وصلاحيات المستخدمين.
+- `docs/4_UI_DESIGN.md`: دليل الألوان والتصميم.
 
-2. Start the app
+## ⚙️ التحديث التلقائي المستمر (CI/CD)
+هذا المشروع مرتبط بشكل مباشر عبر **GitHub** بخدمة الرفع **Vercel**. 
+بمجرد قيام المطور بأي تعديل على الكود وحفظه، تقوم Vercel ببناء المشروع ونشر التحديث الجديد خلال ثوانٍ معدودة وبدون أي تدخل يدوي!
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+## 💻 طريقة التشغيل المحلي (للمطورين)
 ```bash
-npm run reset-project
+# 1. تثبيت الحزم
+npm install
+
+# 2. بدء سيرفر التطوير
+npm start
+
+# لفتح التطبيق على الويب
+npm run web
+
+# لفتح التطبيق على محاكي الأندرويد
+npm run android
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+<div align="center">
+  <sub>تمت هندسة وبناء هذا المشروع بعناية ليجمع بين سهولة الاستخدام للمتلقي، ومرونة التحديث للمطور.</sub>
+</div>
