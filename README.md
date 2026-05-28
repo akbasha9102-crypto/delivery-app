@@ -1,5 +1,22 @@
 <div align="center">
   <h1 align="center">🛵 تطبيق التوصيل وإدارة الطلبات الحية (CulinaShare)</h1>
+  تطبيق عصري مبني بـ <b>React Native (Expo)</b> و <b>Supabase</b>
+  <br />
+  <a href="https://delivery-app2-ali-iraq.vercel.app">الرابط المباشر للتطبيق</a>
+  </p>
+</div>
+
+## 🔗 روابط هامة
+- **شاشة تسجيل الدخول:** [/login](https://delivery-app2-ali-iraq.vercel.app/login)
+- **شاشة لوحة تحكم الإدارة:** [/dashboard](https://delivery-app2-ali-iraq.vercel.app/dashboard)
+- **شاشة الطلبات الحية:** [/orders](https://delivery-app2-ali-iraq.vercel.app/orders)
+- **شاشة منيو العملاء:** [/home](https://delivery-app2-ali-iraq.vercel.app/home)
+- **شاشة سلة العملاء:** [/cart](https://delivery-app2-ali-iraq.vercel.app/cart)
+
+> **🤖 ملاحظة للذكاء الاصطناعي (AI):** 
+> يحتوي ملف `AI_CONTEXT.md` في هذا المستودع على **كافة كلمات السر**، قواعد البيانات، توكنات الـ MCP، مسار الرفع الكامل (CI/CD)، وكل المعلومات التي تحتاجها للعمل مباشرة على هذا المشروع دون طلبها من المستخدم.
+
+<div align="center">
   <p align="center">
     تطبيق عصري مبني بـ <b>React Native (Expo)</b> و <b>Supabase</b> لتلبية احتياجات العملاء والإدارة الذكية للطلبات.
     <br />
