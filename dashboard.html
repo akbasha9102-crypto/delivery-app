@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة إدارة المطعم الاحترافية المتكاملة</title>
+    <style>
+        :root {
+            --body-bg: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-title: #1e293b;
+            --text-body: #64748b;
+            --border: #e2e8f0;
+            --primary: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --info: #06b6d4;
+            --accent: #ff4757;
+            --delivery: #8b5cf6;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            --modal-overlay: rgba(0,0,0,0.55);
+        }
+        [data-theme="dark"] {
+            --body-bg: #0b0f19;
+            --card-bg: #151f32;
+            --text-title: #f8fafc;
+            --text-body: #94a3b8;
+            --border: #223149;
+            --primary: #6366f1;
+            --shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+            --modal-overlay: rgba(0,0,0,0.75);
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--body-bg); color: var(--text-title); margin: 0; padding: 0; transition: all 0.3s ease; }
+        .navbar { background-color: var(--card-bg); border-bottom: 1px solid var(--border); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .navbar h1 { margin: 0; font-size: 1.3em; color: var(--primary); }
+        .theme-btn { background: var(--body-bg); color: var(--text-title); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.85em; display: flex; align-items: center; gap: 8px; width: auto; }
+        .analytics-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; padding: 25px 25px 5px 25px; max-width: 1400px; margin: 0 auto; }
+        .analytics-card { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 5px; position: relative; overflow: hidden; }
+        .analytics-card::before { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 5px; }
+        .card-revenue::before { background-color: var(--success); } .card-done::before { background-color: var(--primary); } .card-active::before { background-color: var(--warning); } .card-drivers::before { background-color: var(--delivery); } .card-delivering::before { background-color: var(--delivery); }
+        .analytics-card .card-label { font-size: 0.9em; color: var(--text-body); font-weight: 600; }
+        .analytics-card .card-value { font-size: 1.7em; font-weight: bold; color: var(--text-title); }
+        .tabs-container { display: flex; background-color: var(--card-bg); border-bottom: 1px solid var(--border); padding: 10px 20px; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+        .tab-btn { background: none; color: var(--text-body); border: none; padding: 12px 20px; font-size: 1em; font-weight: bold; cursor: pointer; border-radius: 10px; transition: all 0.2s ease; width: auto; display: flex; align-items: center; gap: 8px; }
+        .tab-btn:hover { background-color: var(--body-bg); color: var(--text-title); }
+        .tab-btn.active { background-color: var(--primary); color: white; box-shadow: 0 4px 12px rgba(79,70,229,0.3); }
+        .content-section { display: none; padding: 25px; max-width: 1400px; margin: 0 auto; }
+        .content-section.active { display: block; animation: fadeIn 0.25s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+        .table-wrapper { overflow-x: auto; margin-top: 10px; border-radius: 12px; border: 1px solid var(--border); background-color: var(--card-bg); box-shadow: var(--shadow); }
+        .modern-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.95em; min-width: 1000px; }
+        .modern-table th { background-color: var(--body-bg); color: var(--text-body); padding: 14px 10px; font-weight: 600; border-bottom: 2px solid var(--border); white-space: nowrap; }
+        .modern-table td { padding: 12px 10px; border-bottom: 1px solid var(--border); color: var(--text-title); vertical-align: middle; }
+        .badge-preparing { background: rgba(245,158,11,0.15); color: var(--warning); padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.8em; }
+        .badge-delivering { background: rgba(139,92,246,0.15); color: var(--delivery); padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.8em; }
+        .order-card { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow); position: relative; }
+        .status-pending { border-top: 5px solid var(--info); } .status-completed { border-top: 5px solid var(--success); }
+        .status-label { position: absolute; top: 12px; left: 12px; font-size: 0.8em; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
+        .lbl-pending { background: rgba(6,182,212,0.15); color: var(--info); } .lbl-completed { background: rgba(16,185,129,0.15); color: var(--success); }
+        .management-vertical-stack { display: flex; flex-direction: column; gap: 25px; max-width: 1100px; margin: 0 auto; }
+        .panel { background-color: var(--card-bg); border-radius: 14px; border: 1px solid var(--border); padding: 20px; box-shadow: var(--shadow); height: fit-content; }
+        .panel-title { font-size: 1.25em; font-weight: bold; margin-top: 0; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .form-group { margin-bottom: 12px; }
+        input, select, textarea { width: 100%; padding: 11px; border-radius: 8px; border: 1px solid var(--border); background-color: var(--body-bg); color: var(--text-title); text-align: right; font-family: inherit; }
+        textarea { resize: vertical; min-height: 70px; }
+        button { background-color: var(--primary); color: white; border: none; padding: 11px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; transition: 0.2s; }
+        button:hover { opacity: 0.9; }
+        .btn-danger { background-color: var(--accent); } .btn-success { background-color: var(--success); } .btn-info { background-color: var(--info); } .btn-warning { background-color: var(--warning); } .btn-secondary { background-color: var(--text-body); } .btn-purple { background-color: var(--delivery); }
+        .mini-btn { width: auto; padding: 7px 12px; font-size: 0.85em; border-radius: 6px; margin: 2px; font-weight: bold; }
+        .counter { padding: 2px 10px; border-radius: 20px; font-size: 0.85em; font-weight: bold; }
+        .counter-info { background: rgba(6,182,212,0.15); color: var(--info); } .counter-warning { background: rgba(245,158,11,0.15); color: var(--warning); } .counter-success { background: rgba(16,185,129,0.15); color: var(--success); } .counter-purple { background: rgba(139,92,246,0.15); color: var(--delivery); }
+        .driver-group { margin-bottom: 30px; }
+        .driver-group-header { font-size: 1.3em; font-weight: bold; color: var(--delivery); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+        .driver-group-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .delivery-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); cursor: pointer; transition: transform 0.2s; border-right: 5px solid var(--delivery); }
+        .delivery-card:hover { transform: translateY(-2px); }
+        .progress-bar-container { width: 100%; background: var(--body-bg); border-radius: 10px; height: 8px; margin-top: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--delivery), var(--success)); width: 0%; transition: width 0.3s; }
+        .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: var(--modal-overlay); z-index:9999; display:flex; align-items:center; justify-content:center; }
+        .modal-dialog { background: var(--card-bg); border-radius:16px; padding:25px; width:90%; max-width:520px; max-height:80vh; overflow-y:auto; box-shadow:0 20px 40px rgba(0,0,0,0.3); direction:rtl; }
+        .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid var(--border); padding-bottom:12px; }
+        .modal-close-btn { background:var(--accent); color:white; border:none; width:36px; height:36px; border-radius:50%; font-size:1.2em; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:bold; padding:0; }
+        .image-preview-box { margin-top: 8px; display: flex; align-items: center; gap: 12px; }
+        .image-preview-box img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); background: var(--body-bg); }
+        .upload-btn { width: auto; padding: 8px 15px; background: var(--info); color: white; border-radius: 6px; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 6px; }
+        .meal-thumb { width: 100%; height: 140px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; }
+        .meal-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 15px; display: flex; flex-direction: column; box-shadow: var(--shadow); transition: 0.2s; }
+        .meal-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .meal-card .meal-name { font-weight: bold; font-size: 1.1em; margin-bottom: 5px; }
+        .meal-card .meal-price { color: var(--success); font-weight: bold; margin-bottom: 10px; }
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        /* تصميم السويتش المحسن */
+        .switch { position: relative; display: inline-block; width: 54px; height: 28px; cursor: pointer; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top:0; left:0; right:0; bottom:0; background-color: var(--accent); transition: .4s; border-radius: 28px; }
+        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(26px); } /* يتحرك المؤشر إلى اليسار (بسبب rtl يصبح يمين الصفحة) */
+        .meal-card .card-actions { display: flex; gap: 5px; margin-top: auto; }
+        .cat-card-modern { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; box-shadow: var(--shadow); }
+        .cat-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; }
+        .meals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
+        .extras-list { list-style: none; padding: 0; margin: 5px 0 0 0; font-size: 0.8em; color: var(--text-body); }
+        .extras-list li { display: inline-block; background: rgba(139,92,246,0.1); color: #8b5cf6; padding: 2px 8px; border-radius: 4px; margin: 2px; }
+        .extra-thumb { width: 24px; height: 24px; object-fit: cover; border-radius: 4px; margin-left: 4px; vertical-align: middle; border: 1px solid var(--border); }
+        .cat-color-0 { border-right: 6px solid #4f46e5; } .cat-color-1 { border-right: 6px solid #10b981; } .cat-color-2 { border-right: 6px solid #f59e0b; } .cat-color-3 { border-right: 6px solid #ec4899; } .cat-color-4 { border-right: 6px solid #06b6d4; } .cat-color-5 { border-right: 6px solid var(--delivery); } .cat-color-6 { border-right: 6px solid #f97316; }
+        .badge-color-0 { background-color: #4f46e5; } .badge-color-1 { background-color: #10b981; } .badge-color-2 { background-color: #f59e0b; } .badge-color-3 { background-color: #ec4899; } .badge-color-4 { background-color: #06b6d4; } .badge-color-5 { background-color: var(--delivery); } .badge-color-6 { background-color: #f97316; }
+        .order-detail-row { display: flex; justify-content: space-between; margin: 10px 0; }
+        .order-detail-row span:first-child { color: var(--text-body); }
+        .order-detail-row span:last-child { font-weight: bold; }
+        .items-list-modal { background: var(--body-bg); padding: 10px; border-radius: 8px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+<audio id="notification-sound" loop preload="auto"><source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav" type="audio/wav"></audio>
+
+<div id="driver-modal-overlay" class="modal-overlay" style="display:none;">
+    <div class="modal-dialog"><div class="modal-header"><h2>🚗 اختر السائق</h2><button class="modal-close-btn" onclick="closeDriverModal()">✕</button></div>
+        <ul id="driver-select-list" class="driver-select-list"></ul>
+        <div style="margin-top:15px;text-align:center;"><button class="btn-secondary" onclick="closeDriverModal()" style="width:auto;">إلغاء</button></div>
+    </div>
+</div>
+
+<div id="order-detail-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-dialog">
+        <div class="modal-header"><h2>📋 تفاصيل الطلب</h2><button class="modal-close-btn" onclick="document.getElementById('order-detail-modal').style.display='none'">✕</button></div>
+        <div id="order-detail-content"></div>
+    </div>
+</div>
+
+<div id="edit-meal-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-dialog">
+        <div class="modal-header"><h2>✏️ تعديل الوجبة</h2><button class="modal-close-btn" onclick="document.getElementById('edit-meal-modal').style.display='none'">✕</button></div>
+        <input type="hidden" id="edit-meal-id">
+        <div class="form-group"><input type="text" id="edit-meal-name" placeholder="اسم الوجبة"></div>
+        <div class="form-group"><input type="text" id="edit-meal-price" placeholder="السعر"></div>
+        <div class="form-group"><textarea id="edit-meal-desc" placeholder="الوصف"></textarea></div>
+        <div class="form-group">
+            <label>📸 الصورة</label>
+            <div style="display:flex;gap:10px;"><input type="text" id="edit-meal-image" placeholder="رابط الصورة"><label class="upload-btn" for="edit-meal-image-upload">📤 رفع</label><input type="file" id="edit-meal-image-upload" accept="image/*" style="display:none;" onchange="handleEditMealImageUpload(this)"></div>
+            <div class="image-preview-box" id="edit-meal-image-preview"></div>
+        </div>
+        <div class="form-group">
+            <select id="edit-meal-status"><option value="available">متوفر</option><option value="unavailable">غير متوفر</option></select>
+        </div>
+        <div style="display:flex;gap:8px;"><button onclick="saveEditMeal()" class="btn-success">حفظ التعديلات</button><button onclick="document.getElementById('edit-meal-modal').style.display='none'" class="btn-danger">إلغاء</button></div>
+    </div>
+</div>
+
+<div id="extras-modal-overlay" class="modal-overlay" style="display:none;">
+    <div class="modal-dialog">
+        <div class="modal-header"><h2>⚙️ إدارة الإضافات</h2><button class="modal-close-btn" onclick="closeExtrasModal()">✕</button></div>
+        <input type="hidden" id="current-extras-meal-id">
+        <div class="form-group"><input type="text" id="new-extra-name" placeholder="اسم الإضافة (مثلاً: صوص الجبن)"></div>
+        <div class="form-group"><input type="text" id="new-extra-price" placeholder="السعر (د.ع)"></div>
+        <div class="form-group">
+            <label>📸 صورة الإضافة (اختياري)</label>
+            <div style="display:flex; gap:10px;"><input type="text" id="new-extra-image" placeholder="رابط الصورة" style="flex:1;"><label class="upload-btn" for="extra-image-upload">📤 رفع</label><input type="file" id="extra-image-upload" accept="image/*" style="display:none;" onchange="handleExtraImageUpload(this)"></div>
+            <div class="image-preview-box" id="extra-image-preview"></div>
+        </div>
+        <button class="btn-success" onclick="addExtra()" style="margin-bottom:15px;">➕ إضافة</button>
+        <div id="extras-list-container" style="max-height:300px; overflow-y:auto;"></div>
+    </div>
+</div>
+
+<div class="navbar"><h1>👨‍🍳 نظام إدارة وإحصائيات المطبخ الحية</h1><button class="theme-btn" onclick="toggleTheme()"><span id="theme-icon">🌙</span> <span id="theme-text">الوضع الداكن</span></button></div>
+
+<div class="analytics-container">
+    <div class="analytics-card card-revenue"><span class="card-label">💰 إجمالي مبيعات اليوم</span><span class="card-value" id="stats-revenue">0 د.ع</span></div>
+    <div class="analytics-card card-done"><span class="card-label">✅ طلبات مكتملة</span><span class="card-value" id="stats-completed-count">0 طلب</span></div>
+    <div class="analytics-card card-active"><span class="card-label">⏳ قيد التجهيز</span><span class="card-value" id="stats-preparing-count">0 طلب</span></div>
+    <div class="analytics-card card-delivering"><span class="card-label">🚚 قيد التوصيل</span><span class="card-value" id="stats-delivering-count">0 طلب</span></div>
+    <div class="analytics-card card-drivers"><span class="card-label">🚗 سائقين متوفرين</span><span class="card-value" id="stats-available-drivers">0 سائق</span></div>
+</div>
+
+<div class="tabs-container">
+    <button class="tab-btn active" onclick="switchSection('pending-section', this)">📥 واردة <span class="counter counter-info" id="count-pending">0</span></button>
+    <button class="tab-btn" onclick="switchSection('preparing-section', this)">⏳ قيد التجهيز <span class="counter counter-warning" id="count-preparing">0</span></button>
+    <button class="tab-btn" onclick="switchSection('delivering-section', this)">🚚 قيد التوصيل <span class="counter counter-purple" id="count-delivering">0</span></button>
+    <button class="tab-btn" onclick="switchSection('completed-section', this)">✅ مكتملة <span class="counter counter-success" id="count-completed">0</span></button>
+    <button class="tab-btn" onclick="switchSection('drivers-section', this)">🚗 السائقين <span class="counter counter-purple" id="count-drivers">0</span></button>
+    <button class="tab-btn" onclick="switchSection('menu-section', this)">🛠️ المنيو</button>
+</div>
+
+<div id="pending-section" class="content-section active"><div class="orders-grid" id="container-pending"></div></div>
+<div id="preparing-section" class="content-section"><div class="table-wrapper"><table class="modern-table" id="preparing-table"><thead><tr><th>رقم الطلب</th><th>العميل</th><th>الهاتف</th><th>العنوان</th><th>الوجبات</th><th>ملاحظات</th><th>السائق</th><th>المجموع</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody id="preparing-tbody"></tbody></table></div></div>
+<div id="delivering-section" class="content-section"><div id="delivering-cards-container"></div></div>
+<div id="completed-section" class="content-section"><div class="orders-grid" id="container-completed"></div></div>
+<div id="drivers-section" class="content-section">
+    <div class="management-vertical-stack">
+        <div class="panel"><div class="panel-title">📋 قائمة السائقين</div><div id="drivers-list-container"></div></div>
+        <div class="panel"><div class="panel-title">➕ إضافة سائق</div>
+            <div class="form-group"><input type="text" id="driver-name-input" placeholder="اسم السائق"></div>
+            <div class="form-group"><input type="text" id="driver-phone-input" placeholder="رقم الهاتف"></div>
+            <div class="form-group"><select id="driver-status-input"><option value="available">🚗 متوفر</option><option value="busy">🔴 مشغول</option></select></div>
+            <button onclick="addDriver()" class="btn-purple">إضافة</button>
+        </div>
+    </div>
+</div>
+
+<div id="menu-section" class="content-section">
+    <div class="management-vertical-stack">
+        <div class="panel"><div class="panel-title">📋 المنيو الحالي</div><div id="menu-structure"></div></div>
+        <div class="panel"><div class="panel-title">📁 إضافة صنف</div><div style="display:flex;gap:8px;"><input type="text" id="cat-name" placeholder="اسم الصنف"><button onclick="addCategory()" style="width:auto;">+ إضافة</button></div></div>
+        <div class="panel"><div class="panel-title">➕ إضافة وجبة</div>
+            <div class="form-group"><select id="meal-cat-select"></select></div>
+            <div class="form-group"><input type="text" id="meal-name" placeholder="اسم الوجبة"></div>
+            <div class="form-group"><textarea id="meal-desc" placeholder="الوصف"></textarea></div>
+            <div class="form-group"><input type="text" id="meal-price" placeholder="السعر"></div>
+            <div class="form-group"><label>📸 الصورة</label><div style="display:flex;gap:10px;"><input type="text" id="meal-image" placeholder="رابط"><label class="upload-btn" for="meal-image-upload">📤 رفع</label><input type="file" id="meal-image-upload" accept="image/*" style="display:none;" onchange="handleMealImageUpload(this)"></div><div class="image-preview-box" id="meal-image-preview"></div></div>
+            <div class="form-group"><select id="meal-status"><option value="available">متوفر</option><option value="unavailable">غير متوفر</option></select></div>
+            <button onclick="addMeal()" class="btn-success">إدراج الوجبة</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+    import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-storage.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyC4c2CPb29HwJJo4CZ6HGzLm2TqiIx2LDI",
+        authDomain: "mat3m-39b5e.firebaseapp.com",
+        databaseURL: "https://mat3m-39b5e-default-rtdb.firebaseio.com",
+        projectId: "mat3m-39b5e",
+        storageBucket: "mat3m-39b5e.firebasestorage.app",
+        messagingSenderId: "106778344822",
+        appId: "1:106778344822:web:7a2ac151ed8eaa133dce57"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const storage = getStorage(app);
+
+    function convertArabicNumbers(str) { return str ? str.toString().replace(/[٠-٩]/g, d => d.charCodeAt(0)-1632) : str; }
+
+    window.switchSection = (id, btn) => {
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(btn) btn.classList.add('active');
+    };
+    window.toggleTheme = () => {
+        const cur = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", cur);
+        localStorage.setItem("theme", cur);
+        document.getElementById("theme-icon").innerText = cur === "dark" ? "☀️" : "🌙";
+        document.getElementById("theme-text").innerText = cur === "dark" ? "الوضع الفاتح" : "الوضع الداكن";
+    };
+    document.documentElement.setAttribute("data-theme", localStorage.getItem("theme") || "light");
+
+    let pendingOrderIdForDriver = null;
+    let currentOrdersData = {};
+    window.closeDriverModal = () => { document.getElementById('driver-modal-overlay').style.display = 'none'; pendingOrderIdForDriver = null; };
+    window.openDriverModal = (orderId) => { pendingOrderIdForDriver = orderId; document.getElementById('driver-modal-overlay').style.display = 'flex'; populateDriverSelectList(); };
+    function populateDriverSelectList() {
+        const list = document.getElementById('driver-select-list');
+        onValue(ref(db, 'drivers'), snap => {
+            if(document.getElementById('driver-modal-overlay').style.display !== 'flex') return;
+            const drivers = snap.val(); list.innerHTML = '';
+            if(!drivers) { list.innerHTML = '<li>لا يوجد سائقين</li>'; return; }
+            Object.entries(drivers).forEach(([id, d]) => {
+                if(d.status === 'available') {
+                    const li = document.createElement('li'); li.className = 'driver-select-item';
+                    li.innerHTML = `<div><strong>${d.name}</strong><br>📞 ${d.phone||''}</div>`;
+                    li.onclick = () => assignDriverAndProceed(id, d.name);
+                    list.appendChild(li);
+                }
+            });
+            if(list.innerHTML === '') list.innerHTML = '<li>لا يوجد سائقين متوفرين</li>';
+        }, {onlyOnce: false});
+    }
+    window.assignDriverAndProceed = async (driverId, driverName) => {
+        if(!pendingOrderIdForDriver) return;
+        await update(ref(db, `orders/${pendingOrderIdForDriver}`), { status: 'preparing', driverId, driverName });
+        await update(ref(db, `drivers/${driverId}`), { status: 'busy' });
+        closeDriverModal();
+    };
+    async function releaseDriverIfAssigned(orderData) {
+        if(!orderData?.driverId) return;
+        const snap = await new Promise(res => onValue(ref(db, 'orders'), s => res(s.val()), {onlyOnce: true}));
+        let other = false;
+        if(snap) for(let oid in snap) if(snap[oid].driverId === orderData.driverId && (snap[oid].status === 'preparing' || snap[oid].status === 'delivering') && oid !== orderData._orderId) { other = true; break; }
+        if(!other) await update(ref(db, `drivers/${orderData.driverId}`), { status: 'available' });
+    }
+
+    window.updateOrderStatus = (orderId, next) => {
+        if(next === 'preparing') {
+            onValue(ref(db, `orders/${orderId}`), snap => {
+                if(snap.val()?.driverId) update(ref(db, `orders/${orderId}`), { status: 'preparing' });
+                else openDriverModal(orderId);
+            }, {onlyOnce: true});
+        } else if(next === 'delivering') update(ref(db, `orders/${orderId}`), { status: 'delivering' });
+        else if(next === 'completed') {
+            onValue(ref(db, `orders/${orderId}`), snap => {
+                const d = snap.val(); if(d) { d._orderId = orderId; releaseDriverIfAssigned(d); }
+                update(ref(db, `orders/${orderId}`), { status: 'completed' });
+            }, {onlyOnce: true});
+        }
+    };
+    window.deleteOrderImmediate = (orderId) => {
+        if(confirm('مسح الطلب؟')) {
+            onValue(ref(db, `orders/${orderId}`), snap => {
+                const d = snap.val(); if(d) { d._orderId = orderId; releaseDriverIfAssigned(d); }
+                remove(ref(db, `orders/${orderId}`));
+            }, {onlyOnce: true});
+        }
+    };
+
+    window.addDriver = () => {
+        const n = document.getElementById('driver-name-input').value.trim();
+        const p = document.getElementById('driver-phone-input').value.trim();
+        const s = document.getElementById('driver-status-input').value;
+        if(!n) return;
+        push(ref(db, 'drivers'), { name: n, phone: p, status: s }).then(() => {
+            document.getElementById('driver-name-input').value = '';
+            document.getElementById('driver-phone-input').value = '';
+        });
+    };
+    window.deleteDriver = (id) => { if(confirm('حذف السائق؟')) remove(ref(db, `drivers/${id}`)); };
+    window.toggleDriverStatus = (id, cur) => update(ref(db, `drivers/${id}`), { status: cur === 'available' ? 'busy' : 'available' });
+
+    function uploadImageFile(file, callback) {
+        const filePath = `images/${Date.now()}_${file.name}`;
+        const uploadTask = uploadBytesResumable(storageRef(storage, filePath), file);
+        uploadTask.on('state_changed', null, err => alert('فشل الرفع'), () => { getDownloadURL(uploadTask.snapshot.ref).then(url => callback(url)); });
+    }
+    window.handleMealImageUpload = (input) => { if(input.files[0]) uploadImageFile(input.files[0], url => { document.getElementById('meal-image').value = url; document.getElementById('meal-image-preview').innerHTML = `<img src="${url}">`; }); };
+    window.handleEditMealImageUpload = (input) => { if(input.files[0]) uploadImageFile(input.files[0], url => { document.getElementById('edit-meal-image').value = url; document.getElementById('edit-meal-image-preview').innerHTML = `<img src="${url}">`; }); };
+    window.handleExtraImageUpload = (input) => { if(input.files[0]) uploadImageFile(input.files[0], url => { document.getElementById('new-extra-image').value = url; document.getElementById('extra-image-preview').innerHTML = `<img src="${url}">`; }); };
+    document.getElementById('meal-image').addEventListener('input', function() { document.getElementById('meal-image-preview').innerHTML = this.value ? `<img src="${this.value}">` : ''; });
+    document.getElementById('edit-meal-image').addEventListener('input', function() { document.getElementById('edit-meal-image-preview').innerHTML = this.value ? `<img src="${this.value}">` : ''; });
+    document.getElementById('new-extra-image').addEventListener('input', function() { document.getElementById('extra-image-preview').innerHTML = this.value ? `<img src="${this.value}">` : ''; });
+
+    window.addCategory = () => { const n = document.getElementById('cat-name').value.trim(); if(n) push(ref(db, 'categories'), { name: n }).then(() => document.getElementById('cat-name').value = ''); };
+    window.deleteCategory = (id) => { if(confirm('حذف القسم؟')) { remove(ref(db, `categories/${id}`)); remove(ref(db, `meals/${id}`)); } };
+
+    window.addMeal = () => {
+        const catId = document.getElementById('meal-cat-select').value;
+        const name = document.getElementById('meal-name').value.trim();
+        const desc = document.getElementById('meal-desc').value.trim();
+        const price = parseInt(convertArabicNumbers(document.getElementById('meal-price').value.trim()));
+        const image = document.getElementById('meal-image').value.trim();
+        const status = document.getElementById('meal-status').value;
+        if(!catId || !name || isNaN(price)) return alert('تأكد من البيانات');
+        push(ref(db, `meals/${catId}`), { name, description: desc, price, image, status }).then(() => {
+            ['meal-name','meal-desc','meal-price','meal-image'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('meal-image-preview').innerHTML = '';
+        });
+    };
+
+    window.triggerEdit = (catId, mealId, name, price, status, desc, image) => {
+        document.getElementById('edit-meal-modal').style.display = 'flex';
+        document.getElementById('edit-meal-id').value = `${catId}/${mealId}`;
+        document.getElementById('edit-meal-name').value = name;
+        document.getElementById('edit-meal-price').value = price;
+        document.getElementById('edit-meal-desc').value = desc || '';
+        document.getElementById('edit-meal-image').value = image || '';
+        document.getElementById('edit-meal-status').value = status;
+        document.getElementById('edit-meal-image-preview').innerHTML = image ? `<img src="${image}">` : '';
+    };
+
+    window.saveEditMeal = () => {
+        const path = document.getElementById('edit-meal-id').value;
+        const name = document.getElementById('edit-meal-name').value.trim();
+        const price = parseInt(convertArabicNumbers(document.getElementById('edit-meal-price').value.trim()));
+        const desc = document.getElementById('edit-meal-desc').value.trim();
+        const image = document.getElementById('edit-meal-image').value.trim();
+        const status = document.getElementById('edit-meal-status').value;
+        if(!name || isNaN(price)) return alert('الاسم والسعر مطلوبان');
+        update(ref(db, `meals/${path}`), { name, price, description: desc, image, status }).then(() => {
+            document.getElementById('edit-meal-modal').style.display = 'none';
+        });
+    };
+
+    window.deleteMeal = (catId, mealId) => { if(confirm('حذف الوجبة؟')) { remove(ref(db, `meals/${catId}/${mealId}`)); remove(ref(db, `extras/${mealId}`)); } };
+    window.toggleStatus = (catId, mealId, cur) => update(ref(db, `meals/${catId}/${mealId}`), { status: cur === 'available' ? 'unavailable' : 'available' });
+
+    window.openExtrasModal = (mealId) => {
+        document.getElementById('current-extras-meal-id').value = mealId;
+        document.getElementById('extras-modal-overlay').style.display = 'flex';
+        document.getElementById('new-extra-name').value = '';
+        document.getElementById('new-extra-price').value = '';
+        document.getElementById('new-extra-image').value = '';
+        document.getElementById('extra-image-preview').innerHTML = '';
+        loadExtrasForMeal(mealId);
+    };
+    window.closeExtrasModal = () => { document.getElementById('extras-modal-overlay').style.display = 'none'; };
+    function loadExtrasForMeal(mealId) {
+        const container = document.getElementById('extras-list-container');
+        onValue(ref(db, `extras/${mealId}`), snap => {
+            const extras = snap.val();
+            container.innerHTML = '';
+            if(!extras) { container.innerHTML = '<p style="color:var(--text-body);">لا توجد إضافات بعد.</p>'; return; }
+            Object.entries(extras).forEach(([extraId, extra]) => {
+                const img = extra.image ? `<img src="${extra.image}" class="extra-thumb">` : '';
+                const div = document.createElement('div');
+                div.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:var(--body-bg); padding:8px 12px; border-radius:8px; margin-bottom:6px;';
+                div.innerHTML = `<span>${img} <strong>${extra.name}</strong> - ${extra.price} د.ع</span>
+                    <span><button class="mini-btn btn-info" onclick="editExtra('${mealId}','${extraId}','${extra.name}','${extra.price}','${extra.image||''}')">✏️</button><button class="mini-btn btn-danger" onclick="deleteExtra('${mealId}','${extraId}')">🗑️</button></span>`;
+                container.appendChild(div);
+            });
+        }, {onlyOnce: false});
+    }
+    window.addExtra = () => {
+        const mealId = document.getElementById('current-extras-meal-id').value;
+        const name = document.getElementById('new-extra-name').value.trim();
+        const price = parseInt(convertArabicNumbers(document.getElementById('new-extra-price').value.trim()));
+        const image = document.getElementById('new-extra-image').value.trim();
+        if(!name || isNaN(price)) return alert('أدخل اسم وسعر الإضافة');
+        push(ref(db, `extras/${mealId}`), { name, price, image }).then(() => {
+            document.getElementById('new-extra-name').value = '';
+            document.getElementById('new-extra-price').value = '';
+            document.getElementById('new-extra-image').value = '';
+            document.getElementById('extra-image-preview').innerHTML = '';
+        });
+    };
+    window.deleteExtra = (mealId, extraId) => { if(confirm('حذف الإضافة؟')) remove(ref(db, `extras/${mealId}/${extraId}`)); };
+    window.editExtra = (mealId, extraId, oldName, oldPrice, oldImage) => {
+        const newName = prompt('اسم الإضافة الجديد:', oldName);
+        if(newName === null) return;
+        const newPrice = prompt('السعر الجديد:', oldPrice);
+        if(newPrice === null) return;
+        const newImage = prompt('رابط الصورة الجديد (اتركه فارغاً للإبقاء على القديم):', oldImage||'');
+        if(newImage === null) return;
+        const priceNum = parseInt(convertArabicNumbers(newPrice));
+        if(isNaN(priceNum)) return alert('سعر غير صحيح');
+        update(ref(db, `extras/${mealId}/${extraId}`), { name: newName.trim(), price: priceNum, image: newImage.trim() });
+    };
+
+    // عرض المنيو ككروت مع المفتاح التفاعلي (أحمر/أخضر)
+    onValue(ref(db, 'categories'), catSnap => {
+        const categories = catSnap.val();
+        const select = document.getElementById('meal-cat-select');
+        const container = document.getElementById('menu-structure');
+        select.innerHTML = '<option value="">اختر الصنف...</option>';
+        container.innerHTML = '';
+        if(!categories) { container.innerHTML = '<p>لا توجد أصناف</p>'; return; }
+
+        onValue(ref(db, 'meals'), mealSnap => {
+            const allMeals = mealSnap.val() || {};
+            container.innerHTML = '';
+            select.innerHTML = '<option value="">اختر الصنف...</option>';
+            let colorIdx = 0;
+
+            for(let catId in categories) {
+                select.innerHTML += `<option value="${catId}">${categories[catId].name}</option>`;
+                const cls = `cat-color-${colorIdx%7}`;
+                const badge = `badge-color-${colorIdx%7}`;
+                colorIdx++;
+
+                let html = `<div class="cat-card-modern ${cls}">
+                    <div class="cat-card-header">
+                        <span class="badge-status ${badge}" style="font-size:1em;">📁 ${categories[catId].name}</span>
+                        <button class="mini-btn btn-danger" onclick="deleteCategory('${catId}')">حذف القسم</button>
+                    </div>
+                    <div class="meals-grid" id="meals-grid-${catId}">`;
+
+                const meals = allMeals[catId];
+                if(meals) {
+                    for(let mealId in meals) {
+                        const m = meals[mealId];
+                        const isAv = m.status === 'available';
+                        const imgTag = m.image ? `<img src="${m.image}" class="meal-thumb">` : '<div class="meal-thumb" style="background:var(--body-bg); display:flex; align-items:center; justify-content:center; font-size:2em;">🍽️</div>';
+                        html += `
+                        <div class="meal-card">
+                            ${imgTag}
+                            <div class="meal-name">${m.name}</div>
+                            <div class="meal-price">${m.price} د.ع</div>
+                            <div class="toggle-row">
+                                <span style="font-size:0.85em;">${isAv ? '🟢 متوفر' : '🔴 غير متوفر'}</span>
+                                <label class="switch">
+                                    <input type="checkbox" ${isAv?'checked':''} onchange="toggleStatus('${catId}','${mealId}','${m.status}')">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="card-actions">
+                                <button class="mini-btn btn-info" onclick="triggerEdit('${catId}','${mealId}','${m.name}','${m.price}','${m.status}','${(m.description||'').replace(/'/g,"\\'")}','${m.image||''}')">✏️ تعديل</button>
+                                <button class="mini-btn btn-purple" onclick="openExtrasModal('${mealId}')">⚙️ إضافات</button>
+                                <button class="mini-btn btn-danger" onclick="deleteMeal('${catId}','${mealId}')">🗑️</button>
+                            </div>
+                        </div>`;
+                    }
+                } else {
+                    html += '<p style="grid-column:1/-1; color:var(--text-body);">لا توجد وجبات في هذا القسم</p>';
+                }
+                html += '</div></div>';
+                container.innerHTML += html;
+            }
+        });
+    });
+
+    onValue(ref(db, 'drivers'), snap => {
+        const drivers = snap.val();
+        const cont = document.getElementById('drivers-list-container');
+        document.getElementById('count-drivers').innerText = drivers ? Object.keys(drivers).length : 0;
+        let av = 0;
+        if(!drivers) { cont.innerHTML = '<p>لا يوجد سائقين</p>'; document.getElementById('stats-available-drivers').innerText='0 سائق'; return; }
+        let html = '';
+        Object.entries(drivers).forEach(([id, d]) => {
+            if(d.status==='available') av++;
+            html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid var(--border);"><div><strong>${d.name}</strong><br>📞 ${d.phone||''} <span class="badge-status ${d.status==='available'?'bg-av':'bg-busy'}">${d.status==='available'?'متوفر':'مشغول'}</span></div><div><button class="mini-btn btn-info" onclick="toggleDriverStatus('${id}','${d.status}')">تبديل</button><button class="mini-btn btn-danger" onclick="deleteDriver('${id}')">حذف</button></div></div>`;
+        });
+        cont.innerHTML = html;
+        document.getElementById('stats-available-drivers').innerText = av + ' سائق';
+    });
+
+    window.showOrderDetail = (orderId) => {
+        const o = currentOrdersData[orderId];
+        if(!o) return;
+        let itemsHtml = '';
+        if(o.items && Array.isArray(o.items)) {
+            o.items.forEach(i => { itemsHtml += `<div class="item"><span>${i.quantity||1}× ${i.name}</span></div>`; });
+        }
+        const note = o.clientNote ? `<p><strong>💬 ملاحظة:</strong> ${o.clientNote}</p>` : '';
+        const driver = o.driverName ? `<p><strong>🚗 السائق:</strong> ${o.driverName}</p>` : '';
+        const progress = o.deliveryProgress || 0;
+        const content = `
+            <div class="order-detail-row"><span>رقم الطلب</span><span>#${orderId.substring(0,6)}</span></div>
+            <div class="order-detail-row"><span>👤 العميل</span><span>${o.clientName}</span></div>
+            <div class="order-detail-row"><span>📞 الهاتف</span><span><a href="tel:${o.clientPhone}">${o.clientPhone}</a></span></div>
+            <div class="order-detail-row"><span>📍 العنوان</span><span>${o.clientAddress || 'غير محدد'}</span></div>
+            <div class="items-list-modal"><strong>📦 الوجبات المطلوبة:</strong>${itemsHtml}</div>
+            ${note}${driver}
+            <div class="order-detail-row"><span>💰 المجموع</span><span style="color:var(--success); font-size:1.2em;">${o.total} د.ع</span></div>
+            <div style="margin-top:15px;"><span>🚚 تقدم التوصيل:</span><div class="progress-bar-container" style="margin-top:5px;"><div class="progress-bar-fill" style="width:${progress}%"></div></div><small>${progress}% مكتمل</small></div>
+            <button class="btn-success" style="margin-top:15px;" onclick="updateOrderStatus('${orderId}', 'completed'); document.getElementById('order-detail-modal').style.display='none'">✅ تم التوصيل</button>`;
+        document.getElementById('order-detail-content').innerHTML = content;
+        document.getElementById('order-detail-modal').style.display = 'flex';
+    };
+
+    onValue(ref(db, 'orders'), snap => {
+        const data = snap.val();
+        currentOrdersData = data || {};
+        const pendContainer = document.getElementById('container-pending');
+        const prepTbody = document.getElementById('preparing-tbody');
+        const delContainer = document.getElementById('delivering-cards-container');
+        const compContainer = document.getElementById('container-completed');
+        pendContainer.innerHTML = ''; prepTbody.innerHTML = ''; delContainer.innerHTML = ''; compContainer.innerHTML = '';
+        if(!data) {
+            const msg = '<p style="text-align:center;padding:20px;">لا توجد طلبات</p>';
+            pendContainer.innerHTML = msg; compContainer.innerHTML = msg;
+            ['pending','preparing','delivering','completed'].forEach(s => document.getElementById(`count-${s}`).innerText='0');
+            document.getElementById('stats-revenue').innerText='0 د.ع';
+            ['completed','preparing','delivering'].forEach(s => document.getElementById(`stats-${s}-count`).innerText='0 طلب');
+            document.getElementById('notification-sound').pause();
+            return;
+        }
+        let np=0, npr=0, nd=0, nc=0, rev=0;
+        const orders = Object.entries(data).reverse();
+        const deliveringByDriver = {};
+        orders.forEach(([id, o]) => {
+            const st = o.status || 'pending';
+            if(st === 'preparing') {
+                npr++;
+                const shortId = id.substring(0,6);
+                let itemsHtml = ''; if(o.items) o.items.forEach(i => itemsHtml += `<span class="item-qty">${i.quantity||1}×</span> ${i.name}<br>`);
+                prepTbody.innerHTML += `<tr><td>${shortId}</td><td>${o.clientName}</td><td><a href="tel:${o.clientPhone}">${o.clientPhone}</a></td><td>${o.clientAddress||'-'}</td><td class="order-items-cell">${itemsHtml}</td><td>${o.clientNote?'<span class="note-cell">'+o.clientNote+'</span>':'-'}</td><td class="driver-cell">${o.driverName||'غير محدد'}</td><td>${o.total} د.ع</td><td><span class="badge-preparing">⏳ قيد التجهيز</span></td><td><button class="mini-btn btn-purple" onclick="updateOrderStatus('${id}','delivering')">🚚 بدء التوصيل</button></td></tr>`;
+            } else if(st === 'delivering') {
+                nd++;
+                if(!deliveringByDriver[o.driverId || 'unknown']) deliveringByDriver[o.driverId || 'unknown'] = { driverName: o.driverName || 'بدون اسم', orders: [] };
+                deliveringByDriver[o.driverId || 'unknown'].orders.push({ id, ...o });
+            } else if(st === 'pending') {
+                np++;
+                let items = ''; if(o.items) o.items.forEach(i => items += `<div class="item-row"><span><strong>${i.quantity||1}×</strong> ${i.name}</span></div>`);
+                pendContainer.innerHTML += `<div class="order-card status-pending"><span class="status-label lbl-pending">📥 طلب جديد</span><div class="order-info" style="margin-top:15px;"><p>👤 ${o.clientName}</p><p>📞 <a href="tel:${o.clientPhone}">${o.clientPhone}</a></p><p>📍 ${o.clientAddress||'غير محدد'}</p><div class="order-items-list">${items}${o.clientNote?`<div class="order-note-box">💡 ${o.clientNote}</div>`:''}</div></div><div class="order-total-price">💰 ${o.total} د.ع</div><button class="btn-info" onclick="updateOrderStatus('${id}','preparing')">قبول وبدء التجهيز</button></div>`;
+            } else if(st === 'completed') {
+                nc++;
+                rev += parseInt(convertArabicNumbers(o.total?.toString()||'0')) || 0;
+                let items = ''; if(o.items) o.items.forEach(i => items += `<div class="item-row"><span><strong>${i.quantity||1}×</strong> ${i.name}</span></div>`);
+                compContainer.innerHTML += `<div class="order-card status-completed"><span class="status-label lbl-completed">✅ جاهز</span><div class="order-info" style="margin-top:15px;"><p>👤 ${o.clientName}</p><p>📞 ${o.clientPhone}</p><p>📍 ${o.clientAddress||'غير محدد'}</p><div class="order-items-list">${items}</div></div><div class="order-total-price">💰 ${o.total} د.ع</div><button class="btn-danger" onclick="deleteOrderImmediate('${id}')">🗑️ أرشفة ومسح</button></div>`;
+            }
+        });
+        for(let driverId in deliveringByDriver) {
+            const group = deliveringByDriver[driverId];
+            let cardsHtml = '';
+            group.orders.forEach(order => {
+                const progress = order.deliveryProgress || 0;
+                cardsHtml += `<div class="delivery-card" onclick="showOrderDetail('${order.id}')"><div class="order-id">#${order.id.substring(0,6)}</div><div class="customer">👤 ${order.clientName}</div><div class="total">💰 ${order.total} د.ع</div><div class="progress-bar-container"><div class="progress-bar-fill" style="width:${progress}%"></div></div><small style="color:var(--text-body); margin-top:5px;">${progress}% مكتمل</small></div>`;
+            });
+            delContainer.innerHTML += `<div class="driver-group"><div class="driver-group-header">🚚 ${group.driverName}</div><div class="driver-group-cards">${cardsHtml}</div></div>`;
+        }
+        document.getElementById('count-pending').innerText = np;
+        document.getElementById('count-preparing').innerText = npr;
+        document.getElementById('count-delivering').innerText = nd;
+        document.getElementById('count-completed').innerText = nc;
+        document.getElementById('stats-revenue').innerText = rev.toLocaleString() + ' د.ع';
+        document.getElementById('stats-completed-count').innerText = nc + ' طلب';
+        document.getElementById('stats-preparing-count').innerText = npr + ' طلب';
+        document.getElementById('stats-delivering-count').innerText = nd + ' طلب';
+        const snd = document.getElementById('notification-sound');
+        if(np > 0) snd.play().catch(()=>{});
+        else { snd.pause(); snd.currentTime = 0; }
+        if(np === 0) pendContainer.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد طلبات واردة</p>';
+        if(nc === 0) compContainer.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد طلبات مكتملة</p>';
+        if(nd === 0) delContainer.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد طلبات قيد التوصيل</p>';
+    });
+</script>
+</body>
+</html>

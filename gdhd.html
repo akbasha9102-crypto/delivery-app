@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>CulinaShare - قائمة الطعام الذكية</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <style>
+        body {
+            font-family: 'Noto Sans Arabic', 'Be Vietnam Pro', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        :root {
+            --bg-color: #eefcfd;
+            --text-color: #121e1f;
+        }
+        .dark {
+            --bg-color: #1a1c1c;
+            --text-color: #eefcfd;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .dark .bg-background { background-color: #1a1c1c !important; }
+        .dark .text-on-background { color: #eefcfd !important; }
+        .dark .bg-surface { background-color: #263334 !important; }
+        .dark .bg-surface-container-lowest { background-color: #1e2424 !important; }
+
+        @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .menu-item-animated {
+            animation: fadeInUp 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        .progress-line-fill {
+            width: 0%;
+            transition: width 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            background: linear-gradient(90deg, #3B82F6, #60A5FA);
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+            border-radius: 9999px;
+        }
+
+        @keyframes pulse-icon {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); box-shadow: 0 0 10px rgba(16, 185, 129, 0.6); }
+            100% { transform: scale(1); }
+        }
+        .pulse-anim {
+            animation: pulse-icon 1.6s ease-in-out infinite;
+        }
+
+        @keyframes slideUpFade {
+            0% { opacity: 0; transform: translateY(40px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .driver-card-animated {
+            animation: slideUpFade 0.7s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+        }
+
+        @keyframes slideUp {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .tracking-animated {
+            animation: slideUp 0.5s ease forwards;
+            opacity: 0;
+        }
+
+        .menu-cart-bar {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(8px);
+            border-top: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+        }
+        .dark .menu-cart-bar {
+            background: rgba(30,36,36,0.95);
+            border-top-color: rgba(255,255,255,0.1);
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                secondary: "#4e6073",
+                primary: "#944a00",
+                background: "#eefcfd",
+                "surface-container-lowest": "#ffffff",
+                "outline-variant": "#dcc1b1",
+                "primary-container": "#e67e22",
+                "primary-fixed": "#ffdcc5",
+                "surface-container": "#e3f0f1",
+                "surface-container-high": "#ddebec",
+                "surface-container-low": "#e9f6f7",
+                "on-primary-container": "#502600",
+                "on-primary-fixed": "#301400",
+                "on-surface": "#121e1f",
+                "on-surface-variant": "#564337",
+                tertiary: "#5e5e5e",
+                "inverse-surface": "#263334",
+                "surface-dim": "#cfdddd",
+                "on-background": "#121e1f"
+              },
+              borderRadius: {
+                DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"
+              },
+              spacing: {
+                gutter: "24px", "margin-desktop": "40px", "stack-sm": "12px",
+                base: "8px", "container-max": "1280px", "stack-md": "24px",
+                "margin-mobile": "16px", "stack-lg": "48px"
+              },
+              fontFamily: {
+                "headline-sm": ["Noto Sans Arabic", "Be Vietnam Pro"],
+                "body-md": ["Noto Sans Arabic", "Be Vietnam Pro"],
+                "display-lg-mobile": ["Noto Sans Arabic", "Be Vietnam Pro"],
+                "label-lg": ["Noto Sans Arabic", "Be Vietnam Pro"],
+                "body-lg": ["Noto Sans Arabic", "Be Vietnam Pro"],
+                "label-sm": ["Noto Sans Arabic", "Be Vietnam Pro"],
+                "display-lg": ["Noto Sans Arabic", "Be Vietnam Pro"],
+                "headline-md": ["Noto Sans Arabic", "Be Vietnam Pro"]
+              },
+              fontSize: {
+                "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                "display-lg-mobile": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                "label-lg": ["14px", { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "600" }],
+                "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+                "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+                "display-lg": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-20 md:pb-0">
+
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-gutter h-16 bg-surface dark:bg-surface-container-highest shadow-sm">
+    <div class="flex items-center gap-6">
+        <span class="font-headline-md text-headline-md font-bold text-primary">CulinaShare</span>
+        <div class="hidden sm:flex flex-col text-right text-xs border-r border-outline-variant/40 pr-4">
+            <a href="https://maps.google.com" target="_blank" class="flex items-center gap-1 text-on-surface font-bold hover:text-primary transition-colors">
+                <span class="material-symbols-outlined text-sm text-primary">location_on</span> موقع المطعم
+            </a>
+            <a href="tel:07700000000" class="flex items-center gap-1 text-secondary font-semibold mt-0.5 hover:text-primary transition-colors">
+                <span class="material-symbols-outlined text-sm text-primary">call</span> رقم الاتصال: 07700000000
+            </a>
+        </div>
+        <nav class="hidden md:flex items-center gap-6 h-full mr-4">
+            <a id="header-nav-menu" class="font-label-lg text-label-lg text-primary border-b-2 border-primary h-full flex items-center cursor-pointer" onclick="switchToMenuView()">القائمة</a>
+            <a id="header-nav-track" class="font-label-lg text-label-lg text-secondary dark:text-secondary-fixed-dim hover:text-primary-container transition-colors cursor-pointer" onclick="switchToTrackView()">تتبع طلباتي</a>
+        </nav>
+    </div>
+    <div class="flex items-center gap-4">
+        <button id="dark-mode-toggle" class="w-10 h-10 flex items-center justify-center rounded-full text-secondary hover:bg-surface-variant transition-colors scale-95 active:scale-90" title="تبديل الوضع الليلي">
+            <span class="material-symbols-outlined">dark_mode</span>
+        </button>
+        <div class="relative hidden sm:block">
+            <input id="search-input" oninput="filterMealsByName()" class="w-64 h-10 rounded-full border-none bg-surface-container-low px-10 text-body-md focus:ring-2 focus:ring-primary" placeholder="ابحث عن وجبتك..." type="text"/>
+            <span class="material-symbols-outlined absolute right-3 top-2 text-secondary">search</span>
+        </div>
+        <button onclick="openOrderModal()" class="w-10 h-10 flex items-center justify-center rounded-full text-secondary hover:bg-surface-variant transition-colors scale-95 active:scale-90 relative">
+            <span class="material-symbols-outlined">shopping_cart</span>
+            <span id="cart-badge-count" class="absolute -top-1 -left-1 bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold hidden">0</span>
+        </button>
+        <button onclick="switchToTrackView()" class="w-10 h-10 flex items-center justify-center rounded-full text-secondary hover:bg-surface-variant transition-colors scale-95 active:scale-90" title="تتبع الطلب">
+            <span class="material-symbols-outlined">analytics</span>
+        </button>
+    </div>
+</header>
+
+<div class="flex pt-16 max-w-[1440px] mx-auto px-gutter gap-gutter" id="main-content-area">
+    
+    <div id="menu-page" class="flex w-full pb-28 md:pb-20">
+        <aside class="hidden lg:flex flex-col fixed right-gutter top-16 h-[calc(100vh-64px)] w-64 bg-surface-container-low dark:bg-inverse-surface border-l border-outline-variant z-40 transition-all duration-200 ease-in-out p-6">
+            <div class="mb-8">
+                <div class="flex items-center gap-3 mb-2">
+                    <img alt="Profile" class="w-12 h-12 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDw-c0FryfwPXITnfAlaS1QKW7uXJJH5icYkDdJHkbiTm4uY1VQWd0mLzz0mclYOUvzzxcCs4wyHQYwdvAlv0j8U0zZ3rZ3TPVeQ9nYSuJa_n9Yq0iJU8jg_weWOrCJvRM33q2KgBaKX2PLljcLryD52MEX_6ZnSrV4SDfxKLjm2ZOrZ1CMQJKjwMDwQsJzLkXR3zHXdgEN1SXPcShOhocv2-X8L8coQrsHJdUED9uErgbIwCOgk68gk3jnyaiI7QKoIxvlSrdpoBoA"/>
+                    <div>
+                        <p class="font-headline-sm text-headline-sm text-primary">أهلاً بك</p>
+                        <p class="font-body-md text-body-md text-on-surface-variant">جاهز للطلب؟</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="space-y-2">
+                <a id="side-nav-menu" class="flex items-center gap-3 p-3 rounded-lg text-primary font-bold border-r-4 border-primary bg-primary-container/10 transition-all cursor-pointer" onclick="switchToMenuView()">
+                    <span class="material-symbols-outlined">restaurant_menu</span>
+                    <span class="font-body-md text-body-md">المنيو الرئيسي</span>
+                </a>
+                <a id="side-nav-track" class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer" onclick="switchToTrackView()">
+                    <span class="material-symbols-outlined">receipt_long</span>
+                    <span class="font-body-md text-body-md">تتبع طلباتك</span>
+                </a>
+            </nav>
+            <div class="block sm:hidden mt-4 pt-4 border-t border-outline-variant/30 text-xs space-y-2">
+                <a href="https://maps.google.com" target="_blank" class="flex items-center gap-1 text-on-surface font-bold">
+                    <span class="material-symbols-outlined text-sm text-primary">location_on</span> موقع المطعم
+                </a>
+                <a href="tel:07700000000" class="flex items-center gap-1 text-secondary font-semibold">
+                    <span class="material-symbols-outlined text-sm text-primary">call</span> رقم المطعم
+                </a>
+            </div>
+            <div class="mt-auto pt-6 border-t border-outline-variant">
+                <button onclick="openOrderModal()" class="w-full bg-primary-container text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-primary transition-colors shadow-sm">
+                    <span class="material-symbols-outlined">shopping_bag</span>
+                    عرض السلة
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 lg:pr-64 xl:pl-80 py-8 overflow-hidden">
+            <section class="mb-10">
+                <h1 class="font-display-lg text-display-lg-mobile md:text-display-lg mb-6 text-on-background">استكشف النكهات</h1>
+                <div class="flex gap-3 overflow-x-auto hide-scrollbar pb-2" id="categories-chips-holder">
+                    <p class="text-sm text-secondary">جاري تحميل الأقسام... ⏳</p>
+                </div>
+            </section>
+            <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6" id="food-grid-holder">
+                <div class="col-span-full text-center py-12">
+                    <p class="text-body-lg text-secondary">جاري تحميل قائمة الطعام... 🥣</p>
+                </div>
+            </section>
+        </main>
+
+        <aside class="hidden xl:block w-80 py-8 sticky top-16 h-[calc(100vh-64px)] overflow-y-auto hide-scrollbar">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-outline/10 h-full flex flex-col">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="font-headline-md text-headline-md text-on-background">ملخص الطلب</h2>
+                    <span id="cart-items-count-badge" class="bg-primary-fixed text-on-primary-fixed px-3 py-1 rounded-full text-label-sm">٠ عناصر</span>
+                </div>
+                <div class="space-y-4 mb-8 flex-1 overflow-y-auto hide-scrollbar" id="desktop-cart-items-wrapper">
+                    <p class="text-sm text-center text-tertiary py-8">سلة فارغة 🌟</p>
+                </div>
+                <div class="space-y-3 pt-6 border-t border-outline/20">
+                    <div class="flex justify-between">
+                        <span class="text-on-surface-variant">المجموع الفرعي</span>
+                        <span class="font-body-md" id="subtotal-price-text">٠ د.ع</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-on-surface-variant">التوصيل</span>
+                        <span class="font-body-md" id="delivery-price-text">٠ د.ع</span>
+                    </div>
+                    <div class="flex justify-between pt-2 border-t border-outline/20">
+                        <span class="font-headline-sm text-headline-sm">الإجمالي</span>
+                        <span class="font-headline-sm text-headline-sm text-primary" id="total-price-text">٠ د.ع</span>
+                    </div>
+                    <button onclick="openOrderModal()" class="w-full bg-primary-container text-white py-4 rounded-xl font-bold mt-4 shadow-lg hover:bg-primary transition-all active:scale-[0.98]">
+                        إتمام وتأكيد الطلب
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div id="tracking-page" class="hidden w-full py-8">
+        <div class="max-w-4xl mx-auto">
+            <button onclick="switchToMenuView()" class="flex items-center gap-2 text-primary mb-6 hover:underline">
+                <span class="material-symbols-outlined">arrow_back</span>
+                <span class="font-body-lg">العودة إلى القائمة</span>
+            </button>
+            <h2 class="font-display-lg text-display-lg-mobile md:text-display-lg mb-6 text-on-background flex items-center gap-2">
+                <span class="material-symbols-outlined">analytics</span> متابعة الأوردر اللحظي
+            </h2>
+            <div class="mb-6">
+                <label class="block text-sm font-bold mb-2 text-secondary">أدخل رقم الهاتف المسجل به الطلب:</label>
+                <div class="flex gap-2 max-w-md">
+                    <input class="flex-1 rounded-xl border-outline-variant bg-background text-on-background focus:ring-primary text-center font-bold p-3" id="track-phone-input" placeholder="رقم الموبايل" type="tel"/>
+                    <button onclick="startTrackingLiveOrder()" class="bg-primary text-white px-6 rounded-xl font-bold text-sm hover:bg-primary-container transition-colors shadow-sm">فحص 📡</button>
+                </div>
+            </div>
+            <div id="tracking-result-area" class="space-y-4">
+                <div class="min-h-[200px] flex items-center justify-center border border-dashed border-outline-variant/60 rounded-xl p-4 bg-background">
+                    <p class="text-sm text-center text-tertiary">أدخل رقم الهاتف واضغط فحص</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="menu-cart-bar" class="fixed bottom-16 md:bottom-0 left-0 right-0 menu-cart-bar p-3 flex items-center justify-between z-30 hidden">
+    <div class="flex items-center gap-4 overflow-x-auto hide-scrollbar flex-1" id="menu-cart-bar-items">
+    </div>
+    <div class="flex items-center gap-4 mr-4">
+        <div class="text-right">
+            <p class="text-xs text-on-surface-variant">الإجمالي</p>
+            <p class="font-bold text-primary text-sm" id="menu-cart-bar-total">٠ د.ع</p>
+        </div>
+        <button onclick="openOrderModal()" class="bg-primary-container text-white px-5 py-2 rounded-xl font-bold text-sm hover:bg-primary transition-colors shadow-sm">
+            تأكيد الطلب
+        </button>
+    </div>
+</div>
+
+<div id="mobile-floating-cart-bar" onclick="openOrderModal()" class="fixed bottom-18 left-4 right-4 md:hidden bg-primary text-white p-4 rounded-xl flex justify-between items-center shadow-2xl z-40 hidden cursor-pointer">
+    <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined">shopping_cart</span>
+        <span id="mobile-cart-summary-text" class="text-sm font-bold">0 وجبات</span>
+    </div>
+    <span class="text-xs bg-white/20 px-3 py-1 rounded-lg font-bold">عرض السلة 👈</span>
+</div>
+
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline/10 px-gutter h-16 flex justify-around items-center z-50">
+    <button id="mobile-nav-menu" onclick="switchToMenuView()" class="flex flex-col items-center gap-1 text-primary">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">restaurant_menu</span>
+        <span class="text-label-sm">المنيو</span>
+    </button>
+    <button id="mobile-nav-track" onclick="switchToTrackView()" class="flex flex-col items-center gap-1 text-secondary">
+        <span class="material-symbols-outlined">analytics</span>
+        <span class="text-label-sm">تتبع طلبك</span>
+    </button>
+    <a href="https://maps.google.com" target="_blank" class="flex flex-col items-center gap-1 text-secondary">
+        <span class="material-symbols-outlined">location_on</span>
+        <span class="text-label-sm">الموقع</span>
+    </a>
+    <button onclick="openOrderModal()" class="flex flex-col items-center gap-1 text-secondary relative">
+        <span class="material-symbols-outlined">shopping_bag</span>
+        <span class="text-label-sm">السلة</span>
+    </button>
+</nav>
+
+<!-- مودال الطلب مع الإضافات -->
+<div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden" id="order-modal-window">
+    <div class="bg-white dark:bg-inverse-surface rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="flex justify-between items-center border-b border-outline-variant/40 pb-3 mb-4">
+            <h3 class="font-headline-md text-headline-md text-primary">📝 تأكيد وإرسال الطلب</h3>
+            <button onclick="closeOrderModal()" class="text-secondary hover:text-error"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold mb-1 text-secondary">الاسم الكامل:</label>
+                <input class="w-full rounded-xl border-outline-variant bg-background text-on-background focus:ring-primary" id="client-name" placeholder="اسمك الكريم" type="text"/>
+            </div>
+            <div>
+                <label class="block text-xs font-bold mb-1 text-secondary">رقم الهاتف:</label>
+                <input class="w-full rounded-xl border-outline-variant bg-background text-on-background focus:ring-primary text-right" id="client-phone" placeholder="077xxxxxxxx" type="tel"/>
+            </div>
+            <div>
+                <label class="block text-xs font-bold mb-1 text-secondary">المنطقة (محافظة البصرة):</label>
+                <select id="client-area" class="w-full rounded-xl border-outline-variant bg-background text-on-background focus:ring-primary" onchange="handleAreaChange()">
+                    <option value="">-- اختر منطقتك --</option>
+                    <option value="البصرة القديمة">البصرة القديمة</option>
+                    <option value="الجزائر">الجزائر</option>
+                    <option value="العباسي">العباسي</option>
+                    <option value="القبلة">القبلة</option>
+                    <option value="المنطقة الصناعية">المنطقة الصناعية</option>
+                    <option value="المعقل">المعقل</option>
+                    <option value="الزبير">الزبير</option>
+                    <option value="ابو الخصيب">ابو الخصيب</option>
+                    <option value="الفاو">الفاو</option>
+                    <option value="القرنة">القرنة</option>
+                    <option value="المدينة">المدينة</option>
+                    <option value="الدير">الدير</option>
+                    <option value="النشوة">النشوة</option>
+                    <option value="الهارثة">الهارثة</option>
+                    <option value="التنومة">التنومة</option>
+                    <option value="الكرادة">الكرادة</option>
+                    <option value="المناصير">المناصير</option>
+                    <option value="السيبة">السيبة</option>
+                    <option value="الدغارة">الدغارة</option>
+                    <option value="النعمانية">النعمانية</option>
+                    <option value="الخليج العربي">الخليج العربي</option>
+                    <option value="الكرمة">الكرمة</option>
+                    <option value="الصالحية">الصالحية</option>
+                    <option value="الأندلس">الأندلس</option>
+                    <option value="الأمير">الأمير</option>
+                    <option value="الشعب">الشعب</option>
+                    <option value="الرسالة">الرسالة</option>
+                    <option value="الضباط">الضباط</option>
+                    <option value="الجنوبية">الجنوبية</option>
+                    <option value="الغدير">الغدير</option>
+                    <option value="السلام">السلام</option>
+                    <option value="العسكري">العسكري</option>
+                    <option value="الزهراء">الزهراء</option>
+                    <option value="الوفاء">الوفاء</option>
+                    <option value="الحكيم">الحكيم</option>
+                    <option value="الرضوان">الرضوان</option>
+                    <option value="العصري">العصري</option>
+                    <option value="القصور">القصور</option>
+                    <option value="النهروان">النهروان</option>
+                    <option value="الفردوس">الفردوس</option>
+                    <option value="الزيتون">الزيتون</option>
+                    <option value="الأمل">الأمل</option>
+                    <option value="العدل">العدل</option>
+                    <option value="الوحدة">الوحدة</option>
+                    <option value="الفلوجة">الفلوجة</option>
+                    <option value="التحرير">التحرير</option>
+                    <option value="الرميلة">الرميلة</option>
+                    <option value="التاجي">التاجي</option>
+                    <option value="الرفاعي">الرفاعي</option>
+                    <option value="النخيل">النخيل</option>
+                    <option value="الجزيرة">الجزيرة</option>
+                    <option value="البديعة">البديعة</option>
+                    <option value="السلامية">السلامية</option>
+                    <option value="الرشيد">الرشيد</option>
+                    <option value="العروبة">العروبة</option>
+                    <option value="الحلة">الحلة</option>
+                    <option value="النصر">النصر</option>
+                    <option value="الدولفين">الدولفين</option>
+                    <option value="الأمانة">الأمانة</option>
+                    <option value="الشفاء">الشفاء</option>
+                    <option value="العبادي">العبادي</option>
+                    <option value="الحمرا">الحمرا</option>
+                    <option value="العادل">العادل</option>
+                    <option value="العسكري الجديد">العسكري الجديد</option>
+                    <option value="الخليل">الخليل</option>
+                    <option value="المنصور">المنصور</option>
+                    <option value="الروضة">الروضة</option>
+                    <option value="أخرى">منطقة أخرى</option>
+                </select>
+            </div>
+            <div id="custom-area-container" class="hidden">
+                <label class="block text-xs font-bold mb-1 text-secondary">اكتب اسم منطقتك:</label>
+                <input class="w-full rounded-xl border-outline-variant bg-background text-on-background focus:ring-primary" id="client-custom-area" placeholder="اسم المنطقة" type="text"/>
+            </div>
+            <div>
+                <label class="block text-xs font-bold mb-1 text-secondary">توصيف المكان (أقرب نقطة دالة، عمارة، شارع):</label>
+                <input class="w-full rounded-xl border-outline-variant bg-background text-on-background focus:ring-primary" id="client-location-desc" placeholder="مثال: قرب جامع الصادق، شارع 20" type="text"/>
+            </div>
+            <div>
+                <label class="block text-xs font-bold mb-1 text-secondary">ملاحظات (اختياري):</label>
+                <textarea class="w-full rounded-xl border-outline-variant bg-background text-on-background focus:ring-primary text-right resize-none" id="client-note" rows="2" placeholder="ملاحظاتك للمطبخ"></textarea>
+            </div>
+            
+            <!-- الإضافات (يتم التحكم بها من الداشبورد) -->
+            <div class="border-t border-outline-variant/30 pt-4">
+                <label class="block text-xs font-bold mb-2 text-secondary">أضف إلى طلبك (اختياري):</label>
+                <div id="extras-container" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto hide-scrollbar">
+                    <p class="text-xs text-tertiary col-span-full text-center">جاري تحميل الإضافات...</p>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 p-3 bg-surface-container rounded-xl max-h-32 overflow-y-auto space-y-2 xl:hidden" id="mobile-modal-cart-preview"></div>
+        <div class="bg-primary-fixed text-on-primary-fixed p-3 rounded-xl font-bold text-center my-4" id="modal-final-total-price">الإجمالي: 0 د.ع</div>
+        <div class="flex gap-3 border-t border-outline-variant/40 pt-4">
+            <button onclick="submitOrderFinal()" class="flex-1 bg-primary-container text-white py-3 rounded-xl font-bold hover:bg-primary transition-colors">🚀 إرسال الأوردر</button>
+            <button onclick="closeOrderModal()" class="flex-1 bg-surface-container text-on-surface-variant py-3 rounded-xl font-bold hover:bg-outline-variant/40 transition-colors">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getDatabase, ref, onValue, push } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyC4c2CPb29HwJJo4CZ6HGzLm2TqiIx2LDI",
+        authDomain: "mat3m-39b5e.firebaseapp.com",
+        databaseURL: "https://mat3m-39b5e-default-rtdb.firebaseio.com",
+        projectId: "mat3m-39b5e",
+        storageBucket: "mat3m-39b5e.firebasestorage.app",
+        messagingSenderId: "106778344822",
+        appId: "1:106778344822:web:7a2ac151ed8eaa133dce57"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let userCart = {};
+    let selectedExtras = {}; // لتخزين الإضافات المختارة {extraId: {name, price, quantity}}
+    let activeCategoryId = "all";
+    let cachedAllMeals = {};
+    let cachedExtras = {};
+
+    window.handleAreaChange = function() {
+        const select = document.getElementById('client-area');
+        const customContainer = document.getElementById('custom-area-container');
+        if (select.value === 'أخرى') {
+            customContainer.classList.remove('hidden');
+        } else {
+            customContainer.classList.add('hidden');
+            document.getElementById('client-custom-area').value = '';
+        }
+    };
+
+    window.switchToMenuView = function() {
+        document.getElementById('menu-page').classList.remove('hidden');
+        document.getElementById('tracking-page').classList.add('hidden');
+        document.getElementById('menu-cart-bar').classList.toggle('hidden', Object.keys(userCart).length === 0);
+        document.getElementById('mobile-nav-menu').classList.add('text-primary');
+        document.getElementById('mobile-nav-menu').classList.remove('text-secondary');
+        document.getElementById('mobile-nav-track').classList.add('text-secondary');
+        document.getElementById('mobile-nav-track').classList.remove('text-primary');
+        document.getElementById('side-nav-menu').classList.add('text-primary', 'font-bold', 'border-r-4', 'border-primary', 'bg-primary-container/10');
+        document.getElementById('side-nav-track').classList.remove('text-primary', 'font-bold', 'border-r-4', 'border-primary', 'bg-primary-container/10');
+        document.getElementById('header-nav-menu').classList.add('text-primary', 'border-b-2', 'border-primary');
+        document.getElementById('header-nav-track').classList.add('text-secondary');
+        document.getElementById('header-nav-track').classList.remove('text-primary', 'border-b-2', 'border-primary');
+    };
+
+    window.switchToTrackView = function() {
+        document.getElementById('menu-page').classList.add('hidden');
+        document.getElementById('tracking-page').classList.remove('hidden');
+        document.getElementById('menu-cart-bar').classList.add('hidden');
+        document.getElementById('mobile-nav-menu').classList.add('text-secondary');
+        document.getElementById('mobile-nav-menu').classList.remove('text-primary');
+        document.getElementById('mobile-nav-track').classList.add('text-primary');
+        document.getElementById('mobile-nav-track').classList.remove('text-secondary');
+        document.getElementById('side-nav-menu').classList.remove('text-primary', 'font-bold', 'border-r-4', 'border-primary', 'bg-primary-container/10');
+        document.getElementById('side-nav-track').classList.add('text-primary', 'font-bold', 'border-r-4', 'border-primary', 'bg-primary-container/10');
+        document.getElementById('header-nav-menu').classList.add('text-secondary');
+        document.getElementById('header-nav-menu').classList.remove('text-primary', 'border-b-2', 'border-primary');
+        document.getElementById('header-nav-track').classList.add('text-primary', 'border-b-2', 'border-primary');
+        document.getElementById('header-nav-track').classList.remove('text-secondary');
+        document.getElementById('tracking-result-area').innerHTML = `
+            <div class="min-h-[200px] flex items-center justify-center border border-dashed border-outline-variant/60 rounded-xl p-4 bg-background">
+                <p class="text-sm text-center text-tertiary">أدخل رقم الهاتف واضغط فحص</p>
+            </div>`;
+    };
+
+    // Firebase: الأقسام
+    onValue(ref(db, 'categories'), (catSnapshot) => {
+        const categories = catSnapshot.val();
+        const chipsHolder = document.getElementById('categories-chips-holder');
+        if(!categories) {
+            chipsHolder.innerHTML = `<button onclick="window.selectCategoryTab('all')" class="px-6 py-2 rounded-full bg-primary-container text-white font-label-lg">الكل</button>`;
+            return;
+        }
+        let html = `<button id="chip-all" onclick="window.selectCategoryTab('all')" class="px-6 py-2 rounded-full bg-primary-container text-white font-label-lg">الكل</button>`;
+        for(let id in categories) {
+            html += `<button id="chip-${id}" onclick="window.selectCategoryTab('${id}')" class="px-6 py-2 rounded-full bg-surface-container text-on-surface-variant border border-outline/20 hover:border-primary-container font-label-lg">${categories[id].name}</button>`;
+        }
+        chipsHolder.innerHTML = html;
+        window.selectCategoryTab(activeCategoryId);
+    });
+
+    // Firebase: الوجبات
+    onValue(ref(db, 'meals'), (snap) => {
+        cachedAllMeals = snap.val() || {};
+        renderMealsGrid();
+    });
+
+    // Firebase: الإضافات
+    onValue(ref(db, 'extras'), (snap) => {
+        cachedExtras = snap.val() || {};
+        renderExtras();
+    });
+
+    function renderExtras() {
+        const container = document.getElementById('extras-container');
+        if (!container) return;
+        if (!cachedExtras || Object.keys(cachedExtras).length === 0) {
+            container.innerHTML = `<p class="text-xs text-tertiary col-span-full text-center">لا توجد إضافات متاحة حالياً</p>`;
+            return;
+        }
+        let html = '';
+        for (let id in cachedExtras) {
+            const extra = cachedExtras[id];
+            const qty = selectedExtras[id] ? selectedExtras[id].quantity : 0;
+            const isActive = qty > 0;
+            html += `
+            <div class="flex items-center justify-between bg-surface-container-low rounded-lg p-2 border ${isActive ? 'border-primary' : 'border-outline-variant/30'}">
+                <div class="flex items-center gap-2 flex-1">
+                    ${extra.image ? `<img src="${extra.image}" alt="${extra.name}" class="w-8 h-8 rounded-full object-cover"/>` : ''}
+                    <div>
+                        <p class="text-xs font-bold text-on-surface">${extra.name}</p>
+                        <p class="text-[10px] text-primary">${extra.price ? extra.price.toLocaleString('ar-IQ') + ' د.ع' : ''}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1">
+                    ${isActive ? `
+                        <button onclick="window.modifyExtra('${id}', '${extra.name}', ${extra.price || 0}, -1)" class="w-6 h-6 rounded-full border border-outline flex items-center justify-center text-secondary hover:bg-surface-variant text-xs">-</button>
+                        <span class="text-xs font-bold px-1">${qty}</span>
+                        <button onclick="window.modifyExtra('${id}', '${extra.name}', ${extra.price || 0}, 1)" class="w-6 h-6 rounded-full bg-primary-container text-white flex items-center justify-center text-xs">+</button>
+                    ` : `
+                        <button onclick="window.modifyExtra('${id}', '${extra.name}', ${extra.price || 0}, 1)" class="px-2 py-1 rounded-full bg-primary-container text-white text-xs font-bold">إضافة</button>
+                    `}
+                </div>
+            </div>`;
+        }
+        container.innerHTML = html;
+    }
+
+    window.modifyExtra = function(id, name, price, change) {
+        if (!selectedExtras[id]) {
+            selectedExtras[id] = { id, name, price, quantity: 0 };
+        }
+        selectedExtras[id].quantity += change;
+        if (selectedExtras[id].quantity <= 0) {
+            delete selectedExtras[id];
+        }
+        renderExtras();
+        updateOrderTotal();
+    };
+
+    function updateOrderTotal() {
+        // حساب إجمالي السلة الرئيسية + الإضافات
+        let total = 0;
+        for (let id in userCart) {
+            total += userCart[id].price * userCart[id].quantity;
+        }
+        for (let id in selectedExtras) {
+            total += selectedExtras[id].price * selectedExtras[id].quantity;
+        }
+        const delivery = total > 0 ? 3000 : 0; // التوصيل يضاف إذا كان هناك طلب
+        const finalTotal = total + delivery;
+        document.getElementById('modal-final-total-price').innerText = `إجمالي الحساب: ${finalTotal.toLocaleString('ar-IQ')} د.ع`;
+    }
+
+    function renderMealsGrid(filtered = null) {
+        const grid = document.getElementById('food-grid-holder');
+        if(!grid) return;
+        grid.innerHTML = '';
+        const meals = filtered || cachedAllMeals;
+        let found = false;
+        let delay = 0;
+        for(let catId in meals) {
+            if(activeCategoryId !== 'all' && activeCategoryId !== catId) continue;
+            for(let mealId in meals[catId]) {
+                const m = meals[catId][mealId];
+                found = true;
+                const avail = m.status === 'available';
+                const qty = userCart[mealId]?.quantity || 0;
+                const cardClass = avail ? "bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col" : "bg-surface-container/60 rounded-xl overflow-hidden border border-outline-variant/30 opacity-75 flex flex-col";
+                let btnHtml = '';
+                if(avail) {
+                    if(qty > 0) {
+                        btnHtml = `<div class="flex items-center gap-2 mt-auto pt-2 justify-center">
+                            <button onclick="window.modifyQuantity('${mealId}','${m.name}',${m.price},-1,'${catId}')" class="w-8 h-8 rounded-full border border-outline flex items-center justify-center">-</button>
+                            <span class="font-bold">${qty}</span>
+                            <button onclick="window.modifyQuantity('${mealId}','${m.name}',${m.price},1,'${catId}')" class="w-8 h-8 rounded-full bg-primary-container text-white flex items-center justify-center">+</button>
+                        </div>`;
+                    } else {
+                        btnHtml = `<button onclick="window.modifyQuantity('${mealId}','${m.name}',${m.price},1,'${catId}')" class="mt-auto w-full border border-primary-container text-primary-container py-2 rounded-lg font-bold hover:bg-primary-container hover:text-white">أضف للسلة</button>`;
+                    }
+                } else {
+                    btnHtml = `<button disabled class="mt-auto w-full bg-outline-variant/30 text-tertiary py-2 rounded-lg font-bold">غير متوفر ❌</button>`;
+                }
+                
+                grid.innerHTML += `
+                <div class="menu-item-animated ${cardClass}" style="animation-delay: ${delay}s;">
+                    <div class="relative h-48 overflow-hidden bg-surface-container-high">
+                        <img alt="${m.name}" class="w-full h-full object-cover transition-transform duration-500 ${avail?'group-hover:scale-110':''}" src="${m.image || 'https://lh3.googleusercontent.com/aida-public/AB6AXuCtzFkZ5fHKHMCyJsNVz6MGlqzonCLVGaSkR-9MaQ90dOpU9_EsbKq3FQHowteX2bKVZ-lPVGu-GKgLxboyJsqfAYOiGy1CqxkE082OFlzGd6KKlR8IfZrU6EDyCksPQhyOsJVGROI6mkLvwV234gbMnWbqql0qr7voQnFOnaiZoLrtUfI_RAHfnflJo-NKmsJO_YYpSq_WpN2i2hiaqZ4jxos-ckDQbKr9bMwMBhNRELt39E-uzXsdE9jv6yQetHHkOjRoPiFQIg4q'}"/>
+                        <span class="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-label-sm ${avail?'text-green-700':'text-red-600'} font-bold">${avail?'طازج وساخن':'نفذت الكمية'}</span>
+                        ${avail ? `<button onclick="window.modifyQuantity('${mealId}','${m.name}',${m.price},1,'${catId}')" class="absolute bottom-3 left-3 w-10 h-10 bg-primary-container text-white rounded-full flex items-center justify-center shadow-lg transform translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all"><span class="material-symbols-outlined">add</span></button>` : ''}
+                    </div>
+                    <div class="p-4 flex-1 flex flex-col">
+                        <div class="flex justify-between items-start mb-2"><h3 class="font-headline-sm">${m.name}</h3><span class="font-label-lg text-primary">${m.price.toLocaleString('ar-IQ')} د.ع</span></div>
+                        <p class="text-body-md text-on-surface-variant mb-4 line-clamp-2">${m.description || 'وجبة طازجة'}</p>
+                        ${btnHtml}
+                    </div>
+                </div>`;
+                delay += 0.1;
+            }
+        }
+        if(!found) grid.innerHTML = `<div class="col-span-full text-center py-12"><p class="text-body-md text-secondary">لا توجد وجبات 🍽️</p></div>`;
+    }
+
+    window.selectCategoryTab = function(id) {
+        activeCategoryId = id;
+        document.querySelectorAll('#categories-chips-holder button').forEach(b => {
+            b.classList.remove('bg-primary-container','text-white');
+            b.classList.add('bg-surface-container','text-on-surface-variant','border','border-outline/20');
+        });
+        const chip = document.getElementById(`chip-${id}`);
+        if(chip) { chip.classList.remove('bg-surface-container','text-on-surface-variant','border','border-outline/20'); chip.classList.add('bg-primary-container','text-white'); }
+        renderMealsGrid();
+    };
+
+    window.filterMealsByName = function() {
+        const q = document.getElementById('search-input').value.toLowerCase().trim();
+        if(!q) return renderMealsGrid();
+        const filtered = {};
+        for(let cat in cachedAllMeals) for(let id in cachedAllMeals[cat]) if(cachedAllMeals[cat][id].name.toLowerCase().includes(q)) {
+            if(!filtered[cat]) filtered[cat] = {};
+            filtered[cat][id] = cachedAllMeals[cat][id];
+        }
+        renderMealsGrid(filtered);
+    };
+
+    window.modifyQuantity = function(id, name, price, change, cat) {
+        if(!userCart[id]) userCart[id] = { id, name, price, quantity: 0, catId: cat };
+        userCart[id].quantity += change;
+        if(userCart[id].quantity <= 0) delete userCart[id];
+        renderMealsGrid();
+        updateCartUI();
+        updateOrderTotal();
+    };
+
+    function updateCartUI() {
+        const desktop = document.getElementById('desktop-cart-items-wrapper');
+        const modalPrev = document.getElementById('mobile-modal-cart-preview');
+        const menuBarItems = document.getElementById('menu-cart-bar-items');
+        const menuBarTotal = document.getElementById('menu-cart-bar-total');
+        const menuBar = document.getElementById('menu-cart-bar');
+        
+        let count = 0, subtotal = 0;
+        let cartHtml = '', modalHtml = '', barHtml = '';
+        for(let id in userCart) {
+            const item = userCart[id];
+            count += item.quantity;
+            subtotal += item.price * item.quantity;
+            cartHtml += `<div class="flex gap-3 items-center border-b pb-3"><div class="flex-1"><p class="font-bold">${item.name}</p><div class="flex justify-between mt-1"><div class="flex gap-2"><button onclick="window.modifyQuantity('${item.id}','${item.name}',${item.price},-1,'${item.catId}')" class="w-6 h-6 rounded-full border">-</button><span>${item.quantity}</span><button onclick="window.modifyQuantity('${item.id}','${item.name}',${item.price},1,'${item.catId}')" class="w-6 h-6 rounded-full bg-primary-container text-white">+</button></div><span class="text-primary font-bold">${(item.price*item.quantity).toLocaleString('ar-IQ')} د.ع</span></div></div></div>`;
+            modalHtml += `<div class="flex justify-between text-xs border-b pb-1"><span>${item.name} (×${item.quantity})</span><span class="text-primary font-bold">${(item.price*item.quantity).toLocaleString('ar-IQ')} د.ع</span></div>`;
+            barHtml += `<span class="text-xs font-bold bg-surface-container-lowest rounded-full px-3 py-1 mx-1 whitespace-nowrap">${item.name} (${item.quantity})</span>`;
+        }
+        // إضافة الإضافات إلى السلة الظاهرة
+        let extrasCount = 0, extrasSubtotal = 0;
+        for (let id in selectedExtras) {
+            const extra = selectedExtras[id];
+            extrasCount += extra.quantity;
+            extrasSubtotal += extra.price * extra.quantity;
+            // نضيفها للـ cartHtml و modalHtml
+            cartHtml += `<div class="flex gap-3 items-center border-b pb-3"><div class="flex-1"><p class="font-bold text-xs text-secondary">${extra.name}</p><div class="flex justify-between mt-1"><div class="flex gap-2"><button onclick="window.modifyExtra('${extra.id}','${extra.name}',${extra.price},-1)" class="w-6 h-6 rounded-full border">-</button><span class="text-xs">${extra.quantity}</span><button onclick="window.modifyExtra('${extra.id}','${extra.name}',${extra.price},1)" class="w-6 h-6 rounded-full bg-primary-container text-white">+</button></div><span class="text-primary font-bold text-xs">${(extra.price*extra.quantity).toLocaleString('ar-IQ')} د.ع</span></div></div></div>`;
+            modalHtml += `<div class="flex justify-between text-xs border-b pb-1"><span class="text-secondary">${extra.name} (×${extra.quantity})</span><span class="text-primary font-bold">${(extra.price*extra.quantity).toLocaleString('ar-IQ')} د.ع</span></div>`;
+        }
+        count += extrasCount;
+        subtotal += extrasSubtotal;
+        
+        const delivery = count > 0 ? 3000 : 0;
+        const total = subtotal + delivery;
+        
+        document.getElementById('cart-badge-count').innerText = count;
+        document.getElementById('cart-badge-count').classList.toggle('hidden', count === 0);
+        
+        document.getElementById('mobile-floating-cart-bar').classList.toggle('hidden', count === 0);
+        document.getElementById('mobile-cart-summary-text').innerText = `🛒 ${count} وجبات | ${total.toLocaleString('ar-IQ')} د.ع`;
+        
+        desktop.innerHTML = count ? cartHtml : '<p class="text-sm text-center text-tertiary py-8">سلة فارغة 🌟</p>';
+        modalPrev.innerHTML = count ? modalHtml : '<p class="text-xs text-center text-tertiary">السلة فارغة</p>';
+        document.getElementById('cart-items-count-badge').innerText = `${count} عناصر`;
+        document.getElementById('subtotal-price-text').innerText = `${subtotal.toLocaleString('ar-IQ')} د.ع`;
+        document.getElementById('delivery-price-text').innerText = `${delivery.toLocaleString('ar-IQ')} د.ع`;
+        document.getElementById('total-price-text').innerText = `${total.toLocaleString('ar-IQ')} د.ع`;
+        document.getElementById('modal-final-total-price').innerText = `إجمالي الحساب: ${total.toLocaleString('ar-IQ')} د.ع`;
+        
+        menuBarItems.innerHTML = count ? barHtml : '<span class="text-xs text-tertiary">السلة فارغة</span>';
+        menuBarTotal.innerText = `${total.toLocaleString('ar-IQ')} د.ع`;
+        
+        if (document.getElementById('menu-page').classList.contains('hidden') || count === 0) {
+            menuBar.classList.add('hidden');
+        } else {
+            menuBar.classList.remove('hidden');
+        }
+    }
+
+    window.openOrderModal = function() {
+        let count = 0; 
+        for(let id in userCart) count += userCart[id].quantity;
+        for(let id in selectedExtras) count += selectedExtras[id].quantity;
+        if(!count) return alert('السلة فارغة!');
+        document.getElementById('order-modal-window').classList.remove('hidden');
+        updateOrderTotal();
+        // تحديث السلة الظاهرة في المودال
+        updateCartUI();
+    };
+    window.closeOrderModal = () => document.getElementById('order-modal-window').classList.add('hidden');
+
+    window.startTrackingLiveOrder = function() {
+        const phone = document.getElementById('track-phone-input').value.trim();
+        const area = document.getElementById('tracking-result-area');
+        if(!phone) return alert('أدخل رقم الهاتف');
+        area.innerHTML = `<div class="text-center py-6"><div class="inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mb-2"></div><p class="text-xs">جاري الفحص...</p></div>`;
+
+        onValue(ref(db, 'orders'), (snap) => {
+            const orders = snap.val();
+            if(!orders) { area.innerHTML = `<div class="p-4 bg-red-50 rounded-xl text-center text-red-600">لا توجد طلبات</div>`; return; }
+            let latest = null, latestId = null;
+            for(let id in orders) {
+                if(orders[id].clientPhone === phone && (!latest || orders[id].timestamp > latest.timestamp)) {
+                    latest = orders[id]; latestId = id;
+                }
+            }
+            if(!latest) { area.innerHTML = `<div class="p-4 bg-amber-50 rounded-xl text-center text-amber-700">لا يوجد طلب بهذا الرقم</div>`; return; }
+
+            const status = latest.status || 'pending';
+            const shortId = latestId ? latestId.substring(1,7).toUpperCase() : 'N/A';
+            
+            const step1 = (status === 'accepted' || status === 'preparing' || status === 'dispatched' || status === 'completed');
+            const step2 = (status === 'preparing' || status === 'dispatched' || status === 'completed');
+            const step3 = (status === 'dispatched' || status === 'completed');
+
+            let statusMessage = '';
+            let statusEmoji = '';
+            if (status === 'accepted') { statusMessage = 'تم قبول طلبك'; statusEmoji = '🎉'; }
+            else if (status === 'preparing') { statusMessage = 'جاري تحضير طلبك'; statusEmoji = '🍳'; }
+            else if (status === 'dispatched') { statusMessage = 'طلبك في الطريق إليك'; statusEmoji = '🚀'; }
+            else if (status === 'completed') { statusMessage = 'تم التوصيل، شكراً لك'; statusEmoji = '✅'; }
+            else { statusMessage = 'بانتظار تأكيد الطلب'; statusEmoji = '⏳'; }
+
+            let currentPulse = '';
+            if (status === 'accepted') currentPulse = 'step1';
+            else if (status === 'preparing') currentPulse = 'step2';
+            else if (status === 'dispatched' || status === 'completed') currentPulse = 'step3';
+
+            const circleClass = (active, pulse) => 
+                `${active ? "bg-[#10B981] text-white shadow-lg" : "bg-gray-100 text-gray-400"} ${pulse ? "pulse-anim" : ""}`;
+            const textClass = (active) => active ? "text-[#10B981] font-bold" : "text-gray-400";
+
+            const driver = latest.driverName || "أحمد محمد";
+            const driverPhone = latest.driverPhone || "07700000000";
+            const showDriver = (status === 'dispatched' || status === 'completed');
+
+            area.innerHTML = `
+            <div class="bg-white rounded-2xl p-5 border border-gray-100 space-y-6 shadow-sm tracking-animated" style="animation-delay: 0s;">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-gray-500">حالة الأوردر</span>
+                    <span class="bg-[#ffdcc5] text-[#301400] text-xs font-bold px-3 py-1.5 rounded-full">#CS-${shortId}</span>
+                </div>
+                
+                <div class="text-center py-2 tracking-animated" style="animation-delay: 0.1s;">
+                    <span class="text-4xl">${statusEmoji}</span>
+                    <h3 class="text-2xl font-bold text-[#10B981] mt-1">${statusMessage}</h3>
+                </div>
+
+                <div class="flex items-center justify-between w-full tracking-animated" style="animation-delay: 0.2s;">
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center ${circleClass(step1, currentPulse === 'step1')}">
+                            <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL'1;">thumb_up</span>
+                        </div>
+                        <span class="text-xs mt-2 ${textClass(step1)}">تم قبول طلبك</span>
+                    </div>
+                    <div class="flex-1 mx-1 h-1 bg-gray-200 rounded-full overflow-hidden">
+                        <div id="line1" class="progress-line-fill h-full rounded-full" style="width: ${step1 ? '100%' : '0%'};"></div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center ${circleClass(step2, currentPulse === 'step2')}">
+                            <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL'1;">restaurant</span>
+                        </div>
+                        <span class="text-xs mt-2 ${textClass(step2)}">جاري التحضير</span>
+                    </div>
+                    <div class="flex-1 mx-1 h-1 bg-gray-200 rounded-full overflow-hidden">
+                        <div id="line2" class="progress-line-fill h-full rounded-full" style="width: ${step2 ? '100%' : '0%'};"></div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center ${circleClass(step3, currentPulse === 'step3')}">
+                            <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL'1;">local_shipping</span>
+                        </div>
+                        <span class="text-xs mt-2 ${textClass(step3)}">في الطريق</span>
+                    </div>
+                </div>
+
+                <div class="bg-[#eefcfd] rounded-xl p-4 flex items-center justify-between border border-emerald-100 tracking-animated" style="animation-delay: 0.3s;">
+                    <button onclick="window.location.href='tel:07700000000'" class="bg-[#ffdcc5] hover:bg-primary/20 text-[#301400] text-xs font-bold px-4 py-2 rounded-xl">تواصل مع المتجر</button>
+                    <div class="flex items-center gap-2.5 text-right">
+                        <div>
+                            <p class="text-xs text-gray-500">الوقت المقدر</p>
+                            <p class="text-sm font-bold text-[#121e1f]">12:45 م - 1:00 م</p>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-primary"><span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL'1;">schedule</span></div>
+                    </div>
+                </div>
+            </div>
+            <div id="driver-container" class="${showDriver ? '' : 'hidden'}">
+                <div class="driver-card-animated bg-surface-container rounded-2xl p-4 border border-outline-variant/30 flex items-center justify-between shadow-sm mt-4 tracking-animated" style="animation-delay: 0.4s;">
+                    <a href="tel:${driverPhone}" class="w-10 h-10 rounded-full bg-[#944a00] text-white flex items-center justify-center shadow-md"><span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL'1;">call</span></a>
+                    <div class="flex items-center gap-3">
+                        <div class="text-right">
+                            <p class="text-xs text-gray-400">عامل التوصيل</p>
+                            <p class="text-sm font-bold text-on-surface">${driver}</p>
+                            <p class="text-[10px] text-amber-600 flex justify-end">4.9 ★</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full border-2 border-white overflow-hidden bg-gray-200">
+                            <img class="w-full h-full object-cover" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" alt="Driver"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        });
+    };
+
+    window.submitOrderFinal = function() {
+        const name = document.getElementById('client-name').value.trim();
+        const phone = document.getElementById('client-phone').value.trim();
+        const areaSelect = document.getElementById('client-area');
+        const customArea = document.getElementById('client-custom-area').value.trim();
+        const locationDesc = document.getElementById('client-location-desc').value.trim();
+        let address = areaSelect.value;
+        if (address === 'أخرى') {
+            address = customArea;
+        }
+        const note = document.getElementById('client-note').value.trim();
+        
+        if(!name || !phone || !address) return alert('يرجى إكمال الاسم ورقم الهاتف والمنطقة');
+        
+        const items = [];
+        let total = 0;
+        for(let id in userCart) {
+            items.push({ mealId: userCart[id].id, name: userCart[id].name, price: userCart[id].price, quantity: userCart[id].quantity });
+            total += userCart[id].price * userCart[id].quantity;
+        }
+        const extras = [];
+        for (let id in selectedExtras) {
+            extras.push({ extraId: selectedExtras[id].id, name: selectedExtras[id].name, price: selectedExtras[id].price, quantity: selectedExtras[id].quantity });
+            total += selectedExtras[id].price * selectedExtras[id].quantity;
+        }
+        const delivery = total > 0 ? 3000 : 0;
+        total += delivery;
+        
+        push(ref(db, 'orders'), {
+            clientName: name,
+            clientPhone: phone,
+            clientAddress: address,
+            locationDescription: locationDesc,
+            clientNote: note,
+            items,
+            extras,
+            total: total,
+            status: 'pending',
+            timestamp: Date.now()
+        }).then(() => {
+            alert('تم الإرسال!');
+            document.getElementById('track-phone-input').value = phone;
+            userCart = {};
+            selectedExtras = {};
+            ['client-name','client-phone','client-area','client-custom-area','client-location-desc','client-note'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            document.getElementById('custom-area-container').classList.add('hidden');
+            closeOrderModal();
+            updateCartUI();
+            switchToTrackView();
+            startTrackingLiveOrder();
+        }).catch(() => alert('خطأ في الشبكة'));
+    };
+
+    function initDarkMode() {
+        const btn = document.getElementById('dark-mode-toggle');
+        const isDark = localStorage.getItem('darkMode') === 'true';
+        if(isDark) {
+            document.documentElement.classList.add('dark');
+            btn.querySelector('.material-symbols-outlined').textContent = 'light_mode';
+        }
+        btn.addEventListener('click', () => {
+            const nowDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', nowDark);
+            btn.querySelector('.material-symbols-outlined').textContent = nowDark ? 'light_mode' : 'dark_mode';
+        });
+    }
+    initDarkMode();
+    
+    updateCartUI();
+</script>
+</body>
+</html>
