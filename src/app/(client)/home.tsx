@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'expo-router';
 import { useCart } from '@/context/CartContext';
+
+// client anon بدون auth عشان يشوف نفس البيانات الي يشوفها الداشبورد
+const db = createClient(
+  'https://gbmwrvnmvobvieembxmf.supabase.co',
+  'sb_publishable_DB8lKUjdnAah-jNbpFV22w_7Id2Eggr'
+);
 
 type Category = { id: string; name: string };
 type Item = { id: string; name: string; price: number; description: string; image_url: string | null; category_id: string; is_available: boolean };
@@ -19,8 +25,8 @@ export default function HomeScreen() {
   useEffect(() => {
     async function load() {
       const [{ data: cats }, { data: meals }] = await Promise.all([
-        supabase.from('categories').select('*').order('name'),
-        supabase.from('items').select('*').eq('is_available', true),
+        db.from('categories').select('*').order('name'),
+        db.from('items').select('*').eq('is_available', true),
       ]);
       setCategories(cats || []);
       setItems(meals || []);
