@@ -110,15 +110,25 @@
         .order-detail-row span:first-child { color: var(--text-body); }
         .order-detail-row span:last-child { font-weight: bold; }
         .items-list-modal { background: var(--body-bg); padding: 10px; border-radius: 8px; margin: 10px 0; }
+        .driver-select-item { padding: 15px; border-bottom: 1px solid var(--border); cursor: pointer; border-radius: 8px; margin-bottom: 5px; transition: 0.2s; list-style: none; display: flex; justify-content: space-between; align-items: center; background: var(--body-bg); }
+        .driver-select-item:hover { background: var(--primary); color: white; transform: translateX(-5px); }
+        .driver-select-list { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; }
     </style>
 </head>
 <body>
 <audio id="notification-sound" loop preload="auto"><source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav" type="audio/wav"></audio>
 
 <div id="driver-modal-overlay" class="modal-overlay" style="display:none;">
-    <div class="modal-dialog"><div class="modal-header"><h2>🚗 اختر السائق</h2><button class="modal-close-btn" onclick="closeDriverModal()">✕</button></div>
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h2>🚗 اختر السائق للتوصيل</h2>
+            <button class="modal-close-btn" onclick="closeDriverModal()">✕</button>
+        </div>
+        <p style="color: var(--text-body); margin-bottom: 15px;">سيتم فتح واتساب تلقائياً مع تفاصيل الطلب</p>
         <ul id="driver-select-list" class="driver-select-list"></ul>
-        <div style="margin-top:15px;text-align:center;"><button class="btn-secondary" onclick="closeDriverModal()" style="width:auto;">إلغاء</button></div>
+        <div style="margin-top:15px;text-align:center;">
+            <button class="btn-secondary" onclick="closeDriverModal()" style="width:auto;">إلغاء</button>
+        </div>
     </div>
 </div>
 
@@ -192,7 +202,7 @@
         <div class="panel"><div class="panel-title">📋 قائمة السائقين</div><div id="drivers-list-container"></div></div>
         <div class="panel"><div class="panel-title">➕ إضافة سائق</div>
             <div class="form-group"><input type="text" id="driver-name-input" placeholder="اسم السائق"></div>
-            <div class="form-group"><input type="text" id="driver-phone-input" placeholder="رقم الهاتف"></div>
+            <div class="form-group"><input type="text" id="driver-phone-input" placeholder="رقم الهاتف (مع رمز الدولة، مثال: 9647712345678)"></div>
             <div class="form-group"><select id="driver-status-input"><option value="available">🚗 متوفر</option><option value="busy">🔴 مشغول</option></select></div>
             <button onclick="addDriver()" class="btn-purple">إضافة</button>
         </div>
@@ -252,31 +262,107 @@
 
     let pendingOrderIdForDriver = null;
     let currentOrdersData = {};
-    window.closeDriverModal = () => { document.getElementById('driver-modal-overlay').style.display = 'none'; pendingOrderIdForDriver = null; };
-    window.openDriverModal = (orderId) => { pendingOrderIdForDriver = orderId; document.getElementById('driver-modal-overlay').style.display = 'flex'; populateDriverSelectList(); };
+    
+    window.closeDriverModal = () => { 
+        document.getElementById('driver-modal-overlay').style.display = 'none'; 
+        pendingOrderIdForDriver = null; 
+    };
+    
+    window.openDriverModal = (orderId) => { 
+        pendingOrderIdForDriver = orderId; 
+        document.getElementById('driver-modal-overlay').style.display = 'flex'; 
+        populateDriverSelectList(); 
+    };
+    
     function populateDriverSelectList() {
         const list = document.getElementById('driver-select-list');
         onValue(ref(db, 'drivers'), snap => {
             if(document.getElementById('driver-modal-overlay').style.display !== 'flex') return;
-            const drivers = snap.val(); list.innerHTML = '';
-            if(!drivers) { list.innerHTML = '<li>لا يوجد سائقين</li>'; return; }
+            const drivers = snap.val(); 
+            list.innerHTML = '';
+            if(!drivers) { 
+                list.innerHTML = '<li style="text-align:center; padding:20px; color:var(--text-body);">لا يوجد سائقين</li>'; 
+                return; 
+            }
+            
+            let hasAvailable = false;
             Object.entries(drivers).forEach(([id, d]) => {
                 if(d.status === 'available') {
-                    const li = document.createElement('li'); li.className = 'driver-select-item';
-                    li.innerHTML = `<div><strong>${d.name}</strong><br>📞 ${d.phone||''}</div>`;
-                    li.onclick = () => assignDriverAndProceed(id, d.name);
+                    hasAvailable = true;
+                    const li = document.createElement('li'); 
+                    li.className = 'driver-select-item';
+                    li.innerHTML = `
+                        <div>
+                            <strong style="font-size:1.1em;">🚗 ${d.name}</strong>
+                            <br><span style="font-size:0.9em;">📞 ${d.phone||'لا يوجد رقم'}</span>
+                        </div>
+                        <span style="font-size:1.5em;">📱</span>
+                    `;
+                    li.onclick = () => {
+                        // جلب بيانات الطلب الحالي ثم إسناد السائق
+                        onValue(ref(db, `orders/${pendingOrderIdForDriver}`), snap => {
+                            const orderData = snap.val();
+                            assignDriverAndProceed(id, d.name, d.phone, orderData);
+                        }, { onlyOnce: true });
+                    };
                     list.appendChild(li);
                 }
             });
-            if(list.innerHTML === '') list.innerHTML = '<li>لا يوجد سائقين متوفرين</li>';
+            
+            if(!hasAvailable) {
+                list.innerHTML = '<li style="text-align:center; padding:20px; color:var(--text-body);">لا يوجد سائقين متوفرين حالياً</li>';
+            }
         }, {onlyOnce: false});
     }
-    window.assignDriverAndProceed = async (driverId, driverName) => {
+    
+    window.assignDriverAndProceed = async (driverId, driverName, driverPhone, orderData) => {
         if(!pendingOrderIdForDriver) return;
-        await update(ref(db, `orders/${pendingOrderIdForDriver}`), { status: 'preparing', driverId, driverName });
+        
+        // تحديث الطلب بالحالة والسائق
+        await update(ref(db, `orders/${pendingOrderIdForDriver}`), { 
+            status: 'preparing', 
+            driverId, 
+            driverName 
+        });
         await update(ref(db, `drivers/${driverId}`), { status: 'busy' });
+        
+        // 📱 تجهيز وإرسال رسالة الواتساب
+        if(driverPhone && orderData) {
+            const orderId = pendingOrderIdForDriver.substring(0, 6);
+            
+            // تجهيز قائمة الطلبات
+            let itemsList = '';
+            if(orderData.items && Array.isArray(orderData.items)) {
+                orderData.items.forEach(item => {
+                    itemsList += `• ${item.quantity || 1}x ${item.name}\n`;
+                });
+            }
+            
+            // تجهيز الرسالة كاملة
+            const message = 
+                `🚚 *طلب توصيل جديد*\n\n` +
+                `📋 *رقم الطلب:* #${orderId}\n` +
+                `👤 *العميل:* ${orderData.clientName}\n` +
+                `📞 *الهاتف:* ${orderData.clientPhone}\n` +
+                `📍 *العنوان:* ${orderData.clientAddress || 'غير محدد'}\n\n` +
+                `📦 *الطلبات:*\n${itemsList}\n` +
+                `💰 *المجموع:* ${orderData.total} د.ع\n` +
+                `📝 *ملاحظة:* ${orderData.clientNote || 'لا يوجد'}\n\n` +
+                `✅ *يرجى تأكيد استلام الطلب*`;
+            
+            // إنشاء رابط واتساب وفتحه
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/${driverPhone}?text=${encodedMessage}`;
+            
+            // فتح واتساب في نافذة جديدة
+            window.open(whatsappUrl, '_blank');
+            
+            console.log('✅ تم فتح واتساب للسائق:', driverName);
+        }
+        
         closeDriverModal();
     };
+    
     async function releaseDriverIfAssigned(orderData) {
         if(!orderData?.driverId) return;
         const snap = await new Promise(res => onValue(ref(db, 'orders'), s => res(s.val()), {onlyOnce: true}));
@@ -313,9 +399,11 @@
         const p = document.getElementById('driver-phone-input').value.trim();
         const s = document.getElementById('driver-status-input').value;
         if(!n) return;
+        if(!p) return alert('الرجاء إدخال رقم الهاتف');
         push(ref(db, 'drivers'), { name: n, phone: p, status: s }).then(() => {
             document.getElementById('driver-name-input').value = '';
             document.getElementById('driver-phone-input').value = '';
+            alert('✅ تم إضافة السائق بنجاح');
         });
     };
     window.deleteDriver = (id) => { if(confirm('حذف السائق؟')) remove(ref(db, `drivers/${id}`)); };
