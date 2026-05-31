@@ -199,7 +199,7 @@
             <nav class="space-y-2">
                 <a id="side-nav-menu" class="flex items-center gap-3 p-3 rounded-lg text-primary font-bold border-r-4 border-primary bg-primary-container/10 transition-all cursor-pointer" onclick="switchToMenuView()">
                     <span class="material-symbols-outlined">restaurant_menu</span>
-                    <span class="font-body-md text-body-md">المنيو الرئيسي</span>
+                    <span class="font-body-md text-body-md">منيو بلس</span>
                 </a>
                 <a id="side-nav-track" class="flex items-center gap-3 p-3 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-all cursor-pointer" onclick="switchToTrackView()">
                     <span class="material-symbols-outlined">receipt_long</span>
@@ -279,7 +279,7 @@
                 <label class="block text-sm font-bold mb-2 text-secondary">أدخل رقم الهاتف المسجل به الطلب:</label>
                 <div class="flex gap-2 max-w-md">
                     <input class="flex-1 rounded-xl border-outline-variant bg-background text-on-background focus:ring-primary text-center font-bold p-3" id="track-phone-input" placeholder="رقم الموبايل" type="tel"/>
-                    <button onclick="startTrackingLiveOrder()" class="bg-primary text-white px-6 rounded-xl font-bold text-sm hover:bg-primary-container transition-colors shadow-sm">فحص 📡</button>
+                    <button onclick="startTrackingLiveOrder()" class="bg-primary text-white px-6 rounded-xl font-bold text-sm hover:bg-primary-container transition-colors shadow-sm"><span class="text-red-400">فحص</span> 📡</button>
                 </div>
             </div>
             <div id="tracking-result-area" class="space-y-4">
@@ -346,7 +346,7 @@
             </div>
             <div>
                 <label class="block text-xs font-bold mb-1 text-secondary">رقم الهاتف:</label>
-                <input class="w-full rounded-xl border-outline-variant bg-background text-on-background focus:ring-primary text-right" id="client-phone" placeholder="077xxxxxxxx" type="tel"/>
+                <input class="w-full rounded-xl border-outline-variant bg-background text-on-background focus:ring-primary text-right" id="client-phone" placeholder="077xxxxxxxx" type="tel" oninput="window.saveClientPhone()"/>
             </div>
             <div>
                 <label class="block text-xs font-bold mb-1 text-secondary">المنطقة (محافظة البصرة):</label>
@@ -474,6 +474,7 @@
     let activeCategoryId = "all";
     let cachedAllMeals = {};
     let cachedExtras = {};
+    const CLIENT_PHONE_STORAGE_KEY = 'culinaShareClientPhone';
 
     window.handleAreaChange = function() {
         const select = document.getElementById('client-area');
@@ -917,7 +918,7 @@
             document.getElementById('track-phone-input').value = phone;
             userCart = {};
             selectedExtras = {};
-            ['client-name','client-phone','client-area','client-custom-area','client-location-desc','client-note'].forEach(id => {
+            ['client-name','client-area','client-custom-area','client-location-desc','client-note'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
@@ -928,6 +929,20 @@
             startTrackingLiveOrder();
         }).catch(() => alert('خطأ في الشبكة'));
     };
+
+    function saveClientPhone() {
+        const phoneField = document.getElementById('client-phone');
+        if (!phoneField) return;
+        const phone = phoneField.value.trim();
+        localStorage.setItem(CLIENT_PHONE_STORAGE_KEY, phone);
+    }
+
+    function loadSavedClientPhone() {
+        const savedPhone = localStorage.getItem(CLIENT_PHONE_STORAGE_KEY);
+        if (!savedPhone) return;
+        const phoneField = document.getElementById('client-phone');
+        if (phoneField) phoneField.value = savedPhone;
+    }
 
     function initDarkMode() {
         const btn = document.getElementById('dark-mode-toggle');
@@ -943,6 +958,7 @@
         });
     }
     initDarkMode();
+    loadSavedClientPhone();
     
     updateCartUI();
 </script>

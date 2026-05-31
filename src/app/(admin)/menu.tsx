@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { ScrollView, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 
 const DEFAULT_IMAGE = 'https://via.placeholder.com/300x200.png?text=Food';
@@ -134,7 +134,7 @@ export default function AdminMenuScreen() {
         <TouchableOpacity onPress={() => router.push('/(admin)/dashboard')} className="px-3 py-1 bg-gray-100 rounded-lg">
           <Text className="text-gray-700">رجوع</Text>
         </TouchableOpacity>
-        <Text className="text-xl font-bold text-orange-500">تعديل المنيو</Text>
+        <Text className="text-xl font-bold text-blue-600">تعديل المنيو</Text>
       </View>
 
       <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 32 }}>
@@ -148,7 +148,7 @@ export default function AdminMenuScreen() {
           />
           <TouchableOpacity
             onPress={handleAddCategory}
-            className="bg-[#e67e22] py-3 rounded-xl items-center"
+            className="bg-blue-600 py-3 rounded-xl items-center"
             disabled={loading}
           >
             <Text className="text-white font-bold">إضافة القسم</Text>
@@ -165,7 +165,7 @@ export default function AdminMenuScreen() {
                   <TouchableOpacity
                     key={category.id}
                     onPress={() => setForm((prev) => ({ ...prev, category_id: category.id }))}
-                    className={`px-4 py-2 rounded-full mr-2 ${form.category_id === category.id ? 'bg-[#e67e22]' : 'bg-gray-100'}`}
+                    className={`px-4 py-2 rounded-full mr-2 ${form.category_id === category.id ? 'bg-blue-600' : 'bg-gray-100'}`}
                   >
                     <Text className={`${form.category_id === category.id ? 'text-white' : 'text-gray-700'}`}>{category.name}</Text>
                   </TouchableOpacity>
@@ -198,7 +198,7 @@ export default function AdminMenuScreen() {
             placeholder="رابط صورة (اختياري)"
             className="border border-gray-200 rounded-xl px-4 py-3 text-right mb-4"
           />
-          <TouchableOpacity onPress={handleAddItem} className="bg-[#10b981] py-3 rounded-xl items-center" disabled={loading}>
+          <TouchableOpacity onPress={handleAddItem} className="bg-blue-600 py-3 rounded-xl items-center" disabled={loading}>
             <Text className="text-white font-bold">إضافة الطبق</Text>
           </TouchableOpacity>
         </View>
@@ -231,7 +231,7 @@ export default function AdminMenuScreen() {
                     <View key={item.id} className="px-4 py-4 border-b border-gray-100 last:border-b-0">
                       <Text className="font-bold text-right">{item.name}</Text>
                       <Text className="text-gray-500 text-sm text-right">{item.description || 'بدون وصف'}</Text>
-                      <Text className="text-[#e67e22] font-bold text-right mt-2">{item.price} د.ع</Text>
+                      <Text className="text-blue-600 font-bold text-right mt-2">{item.price} د.ع</Text>
                     </View>
                   ))
               )}
