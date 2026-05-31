@@ -609,9 +609,11 @@
         const image = document.getElementById('meal-image').value.trim();
         const status = document.getElementById('meal-status').value;
         if (!catId || !name || isNaN(price)) return alert('تأكد من البيانات');
-        await db.from('items').insert({ category_id: catId, name, description: desc, price, image_url: image || null, is_available: status === 'available' });
+        const { error } = await db.from('items').insert({ category_id: catId, name, description: desc, price, image_url: image || null, is_available: status === 'available' });
+        if (error) return alert('فشل الإضافة: ' + error.message);
         ['meal-name', 'meal-desc', 'meal-price', 'meal-image'].forEach(id => document.getElementById(id).value = '');
         document.getElementById('meal-image-preview').innerHTML = '';
+        loadMenu();
     };
 
     window.triggerEdit = (id, name, price, isAvailable, desc, image) => {
