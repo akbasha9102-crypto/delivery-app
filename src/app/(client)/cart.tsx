@@ -3,15 +3,12 @@ import { useEffect, useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
+import { useCart } from '../../context/CartContext';
 
 const PHONE_STORAGE_KEY = 'deliveryPhone';
 
-const cartItems = [
-  { id: '1', name: 'برغر كلاسيك', price: 5000, quantity: 2 },
-  { id: '2', name: 'بيتزا مارغريتا', price: 8000, quantity: 1 },
-];
-
 export default function CartScreen() {
+  const { items, removeItem, clearCart, total } = useCart();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -22,11 +19,13 @@ export default function CartScreen() {
     AsyncStorage.getItem(PHONE_STORAGE_KEY).then(v => { if (v) setPhone(v); });
   }, []);
 
-  const total = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-
   const handleConfirmOrder = async () => {
     if (!name.trim() || !phone.trim()) {
       Alert.alert('الرجاء إدخال الاسم ورقم الهاتف');
+      return;
+    }
+    if (items.length === 0) {
+      Alert.alert('السلة فارغة');
       return;
     }
     setLoading(true);
@@ -48,9 +47,9 @@ export default function CartScreen() {
 
       if (error || !order) throw error;
 
-      const orderItemsData = cartItems.map(i => ({
+      const orderItemsData = items.map(i => ({
         order_id: order.id,
-        item_id: null,
+        item_id: i.id,
         item_name: i.name,
         quantity: i.quantity,
         price: i.price,
@@ -59,6 +58,7 @@ export default function CartScreen() {
       await supabase.from('order_items').insert(orderItemsData);
 
       Alert.alert('✅ تم إرسال الطلب', 'سيتم التواصل معك قريباً');
+      clearCart();
       setName(''); setAddress(''); setNote('');
     } catch {
       Alert.alert('حدث خطأ', 'تأكد من الاتصال بالإنترنت وحاول مرة أخرى');
@@ -73,22 +73,26 @@ export default function CartScreen() {
         <Text className="text-xl font-bold text-[#944a00]">سلة المشتريات</Text>
       </View>
       <ScrollView className="flex-1 px-4 pt-4">
-        {cartItems.map(item => (
-          <View key={item.id} className="flex-row justify-between items-center bg-white p-4 rounded-xl mb-3 shadow-sm border border-gray-100">
-            <TouchableOpacity className="bg-red-100 p-2 rounded-full">
-              <Text>🗑️</Text>
-            </TouchableOpacity>
-            <View className="flex-row items-center gap-3">
-              <View>
-                <Text className="font-bold text-lg text-right">{item.name}</Text>
-                <Text className="text-[#e67e22] text-right">{item.price.toLocaleString()} د.ع</Text>
-              </View>
-              <View className="bg-gray-100 px-3 py-1 rounded-lg ml-2">
-                <Text className="font-bold">{item.quantity}x</Text>
+        {items.length === 0 ? (
+          <Text className="text-center text-gray-400 mt-20">السلة فارغة</Text>
+        ) : (
+          items.map(item => (
+            <View key={item.id} className="flex-row justify-between items-center bg-white p-4 rounded-xl mb-3 shadow-sm border border-gray-100">
+              <TouchableOpacity className="bg-red-100 p-2 rounded-full" onPress={() => removeItem(item.id)}>
+                <Text>🗑️</Text>
+              </TouchableOpacity>
+              <View className="flex-row items-center gap-3">
+                <View>
+                  <Text className="font-bold text-lg text-right">{item.name}</Text>
+                  <Text className="text-[#e67e22] text-right">{item.price.toLocaleString()} د.ع</Text>
+                </View>
+                <View className="bg-gray-100 px-3 py-1 rounded-lg ml-2">
+                  <Text className="font-bold">{item.quantity}x</Text>
+                </View>
               </View>
             </View>
-          </View>
-        ))}
+          ))
+        )}
 
         <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mt-4 mb-4">
           <Text className="font-bold text-right mb-3">معلومات الطلب</Text>
