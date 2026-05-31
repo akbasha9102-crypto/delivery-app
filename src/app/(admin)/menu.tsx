@@ -1,93 +1,68 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 
 const DEFAULT_IMAGE = 'https://via.placeholder.com/300x200.png?text=Food';
 
+type Category = { id: string; name: string };
+type Item = { id: string; category_id: string; name: string; description: string; price: number; image_url: string; is_available: boolean };
+
+function InputField({ value, onChangeText, placeholder, keyboardType = 'default' }: any) {
+  return (
+    <TextInput
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor="#6b7280"
+      keyboardType={keyboardType}
+      className="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-right text-white mb-3"
+    />
+  );
+}
+
 export default function AdminMenuScreen() {
   const router = useRouter();
-  const [categories, setCategories] = useState([]);
-  const [items, setItems] = useState([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
-
-  const [form, setForm] = useState({
-    category_id: '',
-    name: '',
-    description: '',
-    price: '',
-    image_url: '',
-  });
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ text: string; success: boolean } | null>(null);
+  const [activeTab, setActiveTab] = useState<'add' | 'list'>('add');
+  const [form, setForm] = useState({ category_id: '', name: '', description: '', price: '', image_url: '' });
   const [newCategory, setNewCategory] = useState('');
 
   const fetchMenu = async () => {
     setLoading(true);
-    const { data: categoriesData, error: categoriesError } = await supabase
-      .from('categories')
-      .select('*')
-      .order('created_at', { ascending: true });
+    const { data: catsData } = await supabase.from('categories').select('*').order('created_at', { ascending: true });
 
-    if (categoriesError) {
-      setMessage('حدث خطأ أثناء جلب الأقسام');
-      setLoading(false);
-      return;
-    }
-
-    if (!categoriesData || categoriesData.length === 0) {
-      const defaultCategories = [
-        { name: 'وجبات سريعة' },
-        { name: 'مشروبات' },
-        { name: 'حلويات' },
-      ];
-      const { error: insertError } = await supabase.from('categories').insert(defaultCategories);
-      if (insertError) {
-        setMessage('تعذّر إنشاء الأقسام الافتراضية');
-        setLoading(false);
-        return;
-      }
+    if (!catsData || catsData.length === 0) {
+      await supabase.from('categories').insert([{ name: 'وجبات سريعة' }, { name: 'مشروبات' }, { name: 'حلويات' }]);
       await fetchMenu();
       return;
     }
 
-    setCategories(categoriesData);
-
-    const { data: itemsData, error: itemsError } = await supabase
-      .from('items')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (itemsError) {
-      setMessage('حدث خطأ أثناء جلب الأطباق');
-      setLoading(false);
-      return;
-    }
-
+    setCategories(catsData);
+    const { data: itemsData } = await supabase.from('items').select('*').order('created_at', { ascending: false });
     setItems(itemsData || []);
     setLoading(false);
-    setMessage('');
   };
 
-  useEffect(() => {
-    fetchMenu();
-  }, []);
+  useEffect(() => { fetchMenu(); }, []);
+
+  const showMsg = (text: string, success = true) => {
+    setMessage({ text, success });
+    setTimeout(() => setMessage(null), 3000);
+  };
 
   const handleAddCategory = async () => {
-    if (!newCategory.trim()) {
-      Alert.alert('أدخل اسم القسم');
-      return;
-    }
-    setLoading(true);
+    if (!newCategory.trim()) { Alert.alert('أدخل اسم القسم'); return; }
+    setSaving(true);
     const { error } = await supabase.from('categories').insert([{ name: newCategory.trim() }]);
-    if (error) {
-      setMessage('تعذّر إضافة القسم');
-    } else {
-      setNewCategory('');
-      await fetchMenu();
-      setMessage('تم إضافة القسم بنجاح');
-    }
-    setLoading(false);
+    if (error) { showMsg('تعذّر إضافة القسم', false); }
+    else { setNewCategory(''); await fetchMenu(); showMsg('✓ تم إضافة القسم'); }
+    setSaving(false);
   };
 
   const handleAddItem = async () => {
@@ -95,150 +70,157 @@ export default function AdminMenuScreen() {
       Alert.alert('الرجاء ملء اسم الطبق والسعر واختيار القسم');
       return;
     }
-
     const parsedPrice = parseFloat(form.price.replace(',', '.'));
-    if (Number.isNaN(parsedPrice) || parsedPrice <= 0) {
-      Alert.alert('الرجاء إدخال سعر صالح');
-      return;
-    }
+    if (Number.isNaN(parsedPrice) || parsedPrice <= 0) { Alert.alert('الرجاء إدخال سعر صالح'); return; }
 
-    setLoading(true);
-    const { error } = await supabase.from('items').insert([
-      {
-        category_id: form.category_id,
-        name: form.name.trim(),
-        description: form.description.trim(),
-        price: parsedPrice,
-        image_url: form.image_url.trim() || DEFAULT_IMAGE,
-      },
-    ]);
-
-    if (error) {
-      setMessage('تعذّر إضافة الطبق');
-    } else {
-      setForm({ category_id: '', name: '', description: '', price: '', image_url: '' });
-      await fetchMenu();
-      setMessage('تم إضافة الطبق بنجاح');
-    }
-    setLoading(false);
+    setSaving(true);
+    const { error } = await supabase.from('items').insert([{
+      category_id: form.category_id,
+      name: form.name.trim(),
+      description: form.description.trim(),
+      price: parsedPrice,
+      image_url: form.image_url.trim() || DEFAULT_IMAGE,
+      is_available: true,
+    }]);
+    if (error) { showMsg('تعذّر إضافة الطبق', false); }
+    else { setForm({ category_id: '', name: '', description: '', price: '', image_url: '' }); await fetchMenu(); showMsg('✓ تم إضافة الطبق'); }
+    setSaving(false);
   };
 
-  const categoryMap = categories.reduce((acc, category) => {
-    acc[category.id] = category;
-    return acc;
-  }, {});
+  const toggleAvailable = async (item: Item) => {
+    await supabase.from('items').update({ is_available: !item.is_available }).eq('id', item.id);
+    setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, is_available: !i.is_available } : i));
+  };
+
+  const deleteItem = async (id: string) => {
+    Alert.alert('حذف الطبق', 'هل أنت متأكد؟', [
+      { text: 'إلغاء', style: 'cancel' },
+      { text: 'حذف', style: 'destructive', onPress: async () => {
+        await supabase.from('items').delete().eq('id', id);
+        setItems((prev) => prev.filter((i) => i.id !== id));
+        showMsg('✓ تم الحذف');
+      }},
+    ]);
+  };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <View className="flex-row justify-between items-center p-4 bg-white shadow-sm border-b border-gray-100">
-        <TouchableOpacity onPress={() => router.push('/(admin)/dashboard')} className="px-3 py-1 bg-gray-100 rounded-lg">
-          <Text className="text-gray-700">رجوع</Text>
+    <SafeAreaView className="flex-1 bg-gray-900">
+      {/* Header */}
+      <View className="flex-row justify-between items-center px-5 py-4 border-b border-gray-800">
+        <TouchableOpacity onPress={() => router.push('/(admin)/dashboard')} className="bg-gray-800 px-4 py-2 rounded-xl border border-gray-700">
+          <Text className="text-gray-300 font-bold">← رجوع</Text>
         </TouchableOpacity>
-        <Text className="text-xl font-bold text-blue-600">تعديل المنيو</Text>
+        <Text className="text-white text-xl font-bold">🍴 تعديل المنيو</Text>
+        <View className="w-20" />
       </View>
 
-      <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 32 }}>
-        <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
-          <Text className="text-lg font-bold text-right mb-3">أضف قسم جديد</Text>
-          <TextInput
-            value={newCategory}
-            onChangeText={setNewCategory}
-            placeholder="اسم القسم"
-            className="border border-gray-200 rounded-xl px-4 py-3 text-right mb-3"
-          />
-          <TouchableOpacity
-            onPress={handleAddCategory}
-            className="bg-blue-600 py-3 rounded-xl items-center"
-            disabled={loading}
-          >
-            <Text className="text-white font-bold">إضافة القسم</Text>
-          </TouchableOpacity>
+      {/* Toast */}
+      {message && (
+        <View className={`mx-4 mt-3 px-4 py-3 rounded-xl border ${message.success ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+          <Text className={`text-center font-bold ${message.success ? 'text-green-400' : 'text-red-400'}`}>{message.text}</Text>
         </View>
+      )}
 
-        <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
-          <Text className="text-lg font-bold text-right mb-3">أضف طبق جديد</Text>
-          <View className="mb-3">
-            <Text className="text-right text-gray-600 mb-2">اختر القسم</Text>
-            <View className="border border-gray-200 rounded-xl overflow-hidden">
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row-reverse' }} className="px-1 py-2">
-                {categories.map((category) => (
-                  <TouchableOpacity
-                    key={category.id}
-                    onPress={() => setForm((prev) => ({ ...prev, category_id: category.id }))}
-                    className={`px-4 py-2 rounded-full mr-2 ${form.category_id === category.id ? 'bg-blue-600' : 'bg-gray-100'}`}
-                  >
-                    <Text className={`${form.category_id === category.id ? 'text-white' : 'text-gray-700'}`}>{category.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          </View>
-          <TextInput
-            value={form.name}
-            onChangeText={(value) => setForm((prev) => ({ ...prev, name: value }))}
-            placeholder="اسم الطبق"
-            className="border border-gray-200 rounded-xl px-4 py-3 text-right mb-3"
-          />
-          <TextInput
-            value={form.description}
-            onChangeText={(value) => setForm((prev) => ({ ...prev, description: value }))}
-            placeholder="وصف الطبق"
-            className="border border-gray-200 rounded-xl px-4 py-3 text-right mb-3"
-          />
-          <TextInput
-            value={form.price}
-            onChangeText={(value) => setForm((prev) => ({ ...prev, price: value }))}
-            placeholder="السعر"
-            keyboardType="decimal-pad"
-            className="border border-gray-200 rounded-xl px-4 py-3 text-right mb-3"
-          />
-          <TextInput
-            value={form.image_url}
-            onChangeText={(value) => setForm((prev) => ({ ...prev, image_url: value }))}
-            placeholder="رابط صورة (اختياري)"
-            className="border border-gray-200 rounded-xl px-4 py-3 text-right mb-4"
-          />
-          <TouchableOpacity onPress={handleAddItem} className="bg-blue-600 py-3 rounded-xl items-center" disabled={loading}>
-            <Text className="text-white font-bold">إضافة الطبق</Text>
-          </TouchableOpacity>
+      {/* Tabs */}
+      <View className="flex-row mx-4 mt-4 mb-4 bg-gray-800 rounded-2xl p-1">
+        <TouchableOpacity onPress={() => setActiveTab('add')} className={`flex-1 py-2.5 rounded-xl items-center ${activeTab === 'add' ? 'bg-orange-500' : ''}`}>
+          <Text className={`font-bold ${activeTab === 'add' ? 'text-white' : 'text-gray-400'}`}>إضافة</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setActiveTab('list')} className={`flex-1 py-2.5 rounded-xl items-center ${activeTab === 'list' ? 'bg-orange-500' : ''}`}>
+          <Text className={`font-bold ${activeTab === 'list' ? 'text-white' : 'text-gray-400'}`}>القائمة ({items.length})</Text>
+        </TouchableOpacity>
+      </View>
+
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#f97316" />
         </View>
-
-        {message ? (
-          <View className="bg-yellow-100 border border-yellow-200 rounded-xl p-4 mb-6">
-            <Text className="text-yellow-800 text-right">{message}</Text>
+      ) : activeTab === 'add' ? (
+        <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 32 }}>
+          {/* Add Category */}
+          <View className="bg-gray-800 rounded-2xl p-4 mb-4 border border-gray-700">
+            <Text className="text-white font-bold text-right mb-3 text-base">➕ قسم جديد</Text>
+            <InputField value={newCategory} onChangeText={setNewCategory} placeholder="اسم القسم" />
+            <TouchableOpacity onPress={handleAddCategory} disabled={saving} className="bg-orange-500 py-3 rounded-xl items-center mt-1">
+              <Text className="text-white font-bold">{saving ? 'جاري الحفظ...' : 'إضافة القسم'}</Text>
+            </TouchableOpacity>
           </View>
-        ) : null}
 
-        <Text className="text-lg font-bold mb-4 text-right">الأقسام والأطباق</Text>
-        {loading ? (
-          <View className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <Text className="text-gray-500 text-right">جاري التحميل...</Text>
+          {/* Add Item */}
+          <View className="bg-gray-800 rounded-2xl p-4 border border-gray-700">
+            <Text className="text-white font-bold text-right mb-4 text-base">🍽️ طبق جديد</Text>
+
+            {/* Category Selector */}
+            <Text className="text-gray-400 text-right mb-2 text-sm">اختر القسم</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4" style={{ flexDirection: 'row-reverse' }}>
+              {categories.map((cat) => (
+                <TouchableOpacity
+                  key={cat.id}
+                  onPress={() => setForm((p) => ({ ...p, category_id: cat.id }))}
+                  className={`px-4 py-2 rounded-full mr-2 border ${form.category_id === cat.id ? 'bg-orange-500 border-orange-500' : 'bg-gray-700 border-gray-600'}`}
+                >
+                  <Text className={`font-bold text-sm ${form.category_id === cat.id ? 'text-white' : 'text-gray-300'}`}>{cat.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <InputField value={form.name} onChangeText={(v: string) => setForm((p) => ({ ...p, name: v }))} placeholder="اسم الطبق *" />
+            <InputField value={form.description} onChangeText={(v: string) => setForm((p) => ({ ...p, description: v }))} placeholder="وصف الطبق" />
+            <InputField value={form.price} onChangeText={(v: string) => setForm((p) => ({ ...p, price: v }))} placeholder="السعر * (د.ع)" keyboardType="decimal-pad" />
+            <InputField value={form.image_url} onChangeText={(v: string) => setForm((p) => ({ ...p, image_url: v }))} placeholder="رابط الصورة (اختياري)" />
+
+            <TouchableOpacity onPress={handleAddItem} disabled={saving} className="bg-orange-500 py-3.5 rounded-xl items-center mt-2">
+              <Text className="text-white font-bold text-base">{saving ? 'جاري الحفظ...' : 'إضافة الطبق'}</Text>
+            </TouchableOpacity>
           </View>
-        ) : (
-          categories.map((category) => (
-            <View key={category.id} className="bg-white rounded-xl shadow-sm border border-gray-100 mb-4 overflow-hidden">
-              <View className="px-4 py-3 bg-gray-50 border-b border-gray-100">
-                <Text className="text-right text-lg font-bold">{category.name}</Text>
-              </View>
-              {items.filter((item) => item.category_id === category.id).length === 0 ? (
-                <View className="p-4">
-                  <Text className="text-gray-400 text-right">لا توجد أطباق في هذا القسم بعد.</Text>
+        </ScrollView>
+      ) : (
+        <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 32 }}>
+          {categories.map((cat) => {
+            const catItems = items.filter((i) => i.category_id === cat.id);
+            return (
+              <View key={cat.id} className="mb-5">
+                <View className="flex-row items-center justify-end mb-3">
+                  <Text className="text-white font-bold text-lg">{cat.name}</Text>
+                  <View className="bg-orange-500/20 border border-orange-500/30 px-2.5 py-0.5 rounded-full ml-2">
+                    <Text className="text-orange-400 text-xs font-bold">{catItems.length}</Text>
+                  </View>
                 </View>
-              ) : (
-                items
-                  .filter((item) => item.category_id === category.id)
-                  .map((item) => (
-                    <View key={item.id} className="px-4 py-4 border-b border-gray-100 last:border-b-0">
-                      <Text className="font-bold text-right">{item.name}</Text>
-                      <Text className="text-gray-500 text-sm text-right">{item.description || 'بدون وصف'}</Text>
-                      <Text className="text-blue-600 font-bold text-right mt-2">{item.price} د.ع</Text>
+
+                {catItems.length === 0 ? (
+                  <View className="bg-gray-800 rounded-xl p-4 border border-gray-700 border-dashed items-center">
+                    <Text className="text-gray-500">لا توجد أطباق في هذا القسم</Text>
+                  </View>
+                ) : (
+                  catItems.map((item) => (
+                    <View key={item.id} className="bg-gray-800 rounded-2xl mb-3 border border-gray-700 overflow-hidden">
+                      <View className="flex-row justify-between items-start p-4">
+                        <View className="flex-row gap-2">
+                          <TouchableOpacity onPress={() => deleteItem(item.id)} className="bg-red-500/20 border border-red-500/30 px-3 py-1.5 rounded-lg">
+                            <Text className="text-red-400 text-xs font-bold">حذف</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => toggleAvailable(item)} className={`px-3 py-1.5 rounded-lg border ${item.is_available ? 'bg-green-500/20 border-green-500/30' : 'bg-gray-700 border-gray-600'}`}>
+                            <Text className={`text-xs font-bold ${item.is_available ? 'text-green-400' : 'text-gray-400'}`}>
+                              {item.is_available ? '● متاح' : '○ مخفي'}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                        <View className="items-end flex-1 mr-3">
+                          <Text className="text-white font-bold text-base">{item.name}</Text>
+                          {item.description ? <Text className="text-gray-400 text-xs mt-1 text-right" numberOfLines={1}>{item.description}</Text> : null}
+                        </View>
+                      </View>
+                      <View className="px-4 pb-3">
+                        <Text className="text-orange-400 font-bold text-right">{item.price.toLocaleString()} د.ع</Text>
+                      </View>
                     </View>
                   ))
-              )}
-            </View>
-          ))
-        )}
-      </ScrollView>
+                )}
+              </View>
+            );
+          })}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
