@@ -2,51 +2,69 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '../../lib/supabase';
 
 const PHONE_STORAGE_KEY = 'deliveryPhone';
 
-export default function CartScreen() {
-  const [phone, setPhone] = useState('');
-  const [loaded, setLoaded] = useState(false);
+const cartItems = [
+  { id: '1', name: 'برغر كلاسيك', price: 5000, quantity: 2 },
+  { id: '2', name: 'بيتزا مارغريتا', price: 8000, quantity: 1 },
+];
 
-  const cartItems = [
-    { id: '1', name: 'برغر كلاسيك', price: '5,000', quantity: 2 },
-    { id: '2', name: 'بيتزا مارغريتا', price: '8,000', quantity: 1 },
-  ];
+export default function CartScreen() {
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [note, setNote] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const loadPhone = async () => {
-      try {
-        const storedPhone = await AsyncStorage.getItem(PHONE_STORAGE_KEY);
-        if (storedPhone) {
-          setPhone(storedPhone);
-        }
-      } catch (error) {
-        console.warn('Failed to load saved phone number:', error);
-      } finally {
-        setLoaded(true);
-      }
-    };
-
-    loadPhone();
+    AsyncStorage.getItem(PHONE_STORAGE_KEY).then(v => { if (v) setPhone(v); });
   }, []);
 
-  const handlePhoneChange = async (value) => {
-    setPhone(value);
-    try {
-      await AsyncStorage.setItem(PHONE_STORAGE_KEY, value);
-    } catch (error) {
-      console.warn('Failed to save phone number:', error);
-    }
-  };
+  const total = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
-  const handleConfirmOrder = () => {
-    if (!phone.trim()) {
-      Alert.alert('الرجاء إدخال رقم الهاتف قبل تأكيد الطلب');
+  const handleConfirmOrder = async () => {
+    if (!name.trim() || !phone.trim()) {
+      Alert.alert('الرجاء إدخال الاسم ورقم الهاتف');
       return;
     }
+    setLoading(true);
+    try {
+      await AsyncStorage.setItem(PHONE_STORAGE_KEY, phone.trim());
 
-    Alert.alert('تم حفظ الرقم', 'رقم الهاتف تم حفظه وسيظهر تلقائياً في الزيارات القادمة.');
+      const { data: order, error } = await supabase
+        .from('orders')
+        .insert({
+          client_name: name.trim(),
+          client_phone: phone.trim(),
+          delivery_address: address.trim() || null,
+          client_note: note.trim() || null,
+          total_amount: total,
+          status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (error || !order) throw error;
+
+      const orderItemsData = cartItems.map(i => ({
+        order_id: order.id,
+        item_id: null,
+        item_name: i.name,
+        quantity: i.quantity,
+        price: i.price,
+      }));
+
+      await supabase.from('order_items').insert(orderItemsData);
+
+      Alert.alert('✅ تم إرسال الطلب', 'سيتم التواصل معك قريباً');
+      setName(''); setAddress(''); setNote('');
+    } catch {
+      Alert.alert('حدث خطأ', 'تأكد من الاتصال بالإنترنت وحاول مرة أخرى');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -63,7 +81,7 @@ export default function CartScreen() {
             <View className="flex-row items-center gap-3">
               <View>
                 <Text className="font-bold text-lg text-right">{item.name}</Text>
-                <Text className="text-[#e67e22] text-right">{item.price} د.ع</Text>
+                <Text className="text-[#e67e22] text-right">{item.price.toLocaleString()} د.ع</Text>
               </View>
               <View className="bg-gray-100 px-3 py-1 rounded-lg ml-2">
                 <Text className="font-bold">{item.quantity}x</Text>
@@ -73,36 +91,49 @@ export default function CartScreen() {
         ))}
 
         <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mt-4 mb-4">
-          <Text className="font-bold text-right mb-2">معلومات الطلب</Text>
+          <Text className="font-bold text-right mb-3">معلومات الطلب</Text>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="الاسم"
+            className="border border-gray-200 rounded-xl px-4 py-3 text-right mb-3"
+          />
           <TextInput
             value={phone}
-            onChangeText={handlePhoneChange}
+            onChangeText={setPhone}
             placeholder="رقم الهاتف"
             keyboardType="phone-pad"
+            className="border border-gray-200 rounded-xl px-4 py-3 text-right mb-3"
+          />
+          <TextInput
+            value={address}
+            onChangeText={setAddress}
+            placeholder="العنوان"
+            className="border border-gray-200 rounded-xl px-4 py-3 text-right mb-3"
+          />
+          <TextInput
+            value={note}
+            onChangeText={setNote}
+            placeholder="ملاحظات (اختياري)"
             className="border border-gray-200 rounded-xl px-4 py-3 text-right"
           />
-          <Text className="text-gray-500 text-sm mt-3 text-right">
-            سيتم حفظ رقمك في جهازك بحيث لا تحتاج لإدخاله مرة أخرى عند فتح الموقع.
-          </Text>
         </View>
 
         <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mt-4">
-          <View className="flex-row justify-between mb-2">
-            <Text className="font-bold">18,000 د.ع</Text>
-            <Text className="text-gray-500">المجموع الفرعي</Text>
-          </View>
-          <View className="flex-row justify-between mb-2">
-            <Text className="font-bold">2,000 د.ع</Text>
-            <Text className="text-gray-500">التوصيل</Text>
-          </View>
           <View className="flex-row justify-between border-t border-gray-100 pt-2 mt-2">
-            <Text className="font-bold text-lg text-[#e67e22]">20,000 د.ع</Text>
+            <Text className="font-bold text-lg text-[#e67e22]">{total.toLocaleString()} د.ع</Text>
             <Text className="font-bold text-lg">الإجمالي</Text>
           </View>
         </View>
 
-        <TouchableOpacity onPress={handleConfirmOrder} className="w-full bg-[#e67e22] py-4 rounded-xl items-center mt-6">
-          <Text className="text-white font-bold text-lg">تأكيد الطلب</Text>
+        <TouchableOpacity
+          onPress={handleConfirmOrder}
+          disabled={loading}
+          className={`w-full py-4 rounded-xl items-center mt-6 ${loading ? 'bg-gray-400' : 'bg-[#e67e22]'}`}
+        >
+          <Text className="text-white font-bold text-lg">
+            {loading ? 'جاري الإرسال...' : 'تأكيد الطلب'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

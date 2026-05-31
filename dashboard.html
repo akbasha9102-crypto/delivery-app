@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة إدارة المطعم الاحترافية المتكاملة</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --body-bg: #f4f6f9;
@@ -174,7 +175,7 @@
     </div>
 </div>
 
-<div class="navbar"><h1 style="color:#f97316;">dasha</h1><button class="theme-btn" onclick="toggleTheme()"><span id="theme-icon">🌙</span> <span id="theme-text">الوضع الداكن</span></button></div>
+<div class="navbar"><h1 style="color:#2563eb;">dasha</h1><button class="theme-btn" onclick="toggleTheme()"><span id="theme-icon">🌙</span> <span id="theme-text">الوضع الداكن</span></button></div>
 
 <div class="analytics-container">
     <div class="analytics-card card-revenue"><span class="card-label">💰 إجمالي مبيعات اليوم</span><span class="card-value" id="stats-revenue">0 د.ع</span></div>
@@ -225,31 +226,21 @@
     </div>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-    import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
-    import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-storage.js";
+<script>
+    const { createClient } = window.supabase;
+    const db = createClient(
+        'https://gbmwrvnmvobvieembxmf.supabase.co',
+        'sb_publishable_DB8lKUjdnAah-jNbpFV22w_7Id2Eggr'
+    );
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyC4c2CPb29HwJJo4CZ6HGzLm2TqiIx2LDI",
-        authDomain: "mat3m-39b5e.firebaseapp.com",
-        databaseURL: "https://mat3m-39b5e-default-rtdb.firebaseio.com",
-        projectId: "mat3m-39b5e",
-        storageBucket: "mat3m-39b5e.firebasestorage.app",
-        messagingSenderId: "106778344822",
-        appId: "1:106778344822:web:7a2ac151ed8eaa133dce57"
-    };
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const storage = getStorage(app);
+    function convertArabicNumbers(str) { return str ? str.toString().replace(/[٠-٩]/g, d => d.charCodeAt(0) - 1632) : str; }
 
-    function convertArabicNumbers(str) { return str ? str.toString().replace(/[٠-٩]/g, d => d.charCodeAt(0)-1632) : str; }
-
+    // ===== THEME & TABS =====
     window.switchSection = (id, btn) => {
         document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(id).classList.add('active');
-        if(btn) btn.classList.add('active');
+        if (btn) btn.classList.add('active');
     };
     window.toggleTheme = () => {
         const cur = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
@@ -260,212 +251,398 @@
     };
     document.documentElement.setAttribute("data-theme", localStorage.getItem("theme") || "light");
 
+    // ===== STATE =====
     let pendingOrderIdForDriver = null;
     let currentOrdersData = {};
-    
-    window.closeDriverModal = () => { 
-        document.getElementById('driver-modal-overlay').style.display = 'none'; 
-        pendingOrderIdForDriver = null; 
+    let currentExtrasItemId = null;
+
+    // ===== DRIVER MODAL =====
+    window.closeDriverModal = () => {
+        document.getElementById('driver-modal-overlay').style.display = 'none';
+        pendingOrderIdForDriver = null;
     };
-    
-    window.openDriverModal = (orderId) => { 
-        pendingOrderIdForDriver = orderId; 
-        document.getElementById('driver-modal-overlay').style.display = 'flex'; 
-        populateDriverSelectList(); 
+
+    window.openDriverModal = async (orderId) => {
+        pendingOrderIdForDriver = orderId;
+        document.getElementById('driver-modal-overlay').style.display = 'flex';
+        await populateDriverSelectList();
     };
-    
-    function populateDriverSelectList() {
+
+    async function populateDriverSelectList() {
         const list = document.getElementById('driver-select-list');
-        onValue(ref(db, 'drivers'), snap => {
-            if(document.getElementById('driver-modal-overlay').style.display !== 'flex') return;
-            const drivers = snap.val(); 
-            list.innerHTML = '';
-            if(!drivers) { 
-                list.innerHTML = '<li style="text-align:center; padding:20px; color:var(--text-body);">لا يوجد سائقين</li>'; 
-                return; 
-            }
-            
-            let hasAvailable = false;
-            Object.entries(drivers).forEach(([id, d]) => {
-                if(d.status === 'available') {
-                    hasAvailable = true;
-                    const li = document.createElement('li'); 
-                    li.className = 'driver-select-item';
-                    li.innerHTML = `
-                        <div>
-                            <strong style="font-size:1.1em;">🚗 ${d.name}</strong>
-                            <br><span style="font-size:0.9em;">📞 ${d.phone||'لا يوجد رقم'}</span>
-                        </div>
-                        <span style="font-size:1.5em;">📱</span>
-                    `;
-                    li.onclick = () => {
-                        // جلب بيانات الطلب الحالي ثم إسناد السائق
-                        onValue(ref(db, `orders/${pendingOrderIdForDriver}`), snap => {
-                            const orderData = snap.val();
-                            assignDriverAndProceed(id, d.name, d.phone, orderData);
-                        }, { onlyOnce: true });
-                    };
-                    list.appendChild(li);
-                }
-            });
-            
-            if(!hasAvailable) {
-                list.innerHTML = '<li style="text-align:center; padding:20px; color:var(--text-body);">لا يوجد سائقين متوفرين حالياً</li>';
-            }
-        }, {onlyOnce: false});
-    }
-    
-    window.assignDriverAndProceed = async (driverId, driverName, driverPhone, orderData) => {
-        if(!pendingOrderIdForDriver) return;
-        
-        // تحديث الطلب بالحالة والسائق
-        await update(ref(db, `orders/${pendingOrderIdForDriver}`), { 
-            status: 'preparing', 
-            driverId, 
-            driverName 
-        });
-        await update(ref(db, `drivers/${driverId}`), { status: 'busy' });
-        
-        // 📱 تجهيز وإرسال رسالة الواتساب
-        if(driverPhone && orderData) {
-            const orderId = pendingOrderIdForDriver.substring(0, 6);
-            
-            // تجهيز قائمة الطلبات
-            let itemsList = '';
-            if(orderData.items && Array.isArray(orderData.items)) {
-                orderData.items.forEach(item => {
-                    itemsList += `• ${item.quantity || 1}x ${item.name}\n`;
-                });
-            }
-            
-            // تجهيز الرسالة كاملة
-            const message = 
-                `🚚 *طلب توصيل جديد*\n\n` +
-                `📋 *رقم الطلب:* #${orderId}\n` +
-                `👤 *العميل:* ${orderData.clientName}\n` +
-                `📞 *الهاتف:* ${orderData.clientPhone}\n` +
-                `📍 *العنوان:* ${orderData.clientAddress || 'غير محدد'}\n\n` +
-                `📦 *الطلبات:*\n${itemsList}\n` +
-                `💰 *المجموع:* ${orderData.total} د.ع\n` +
-                `📝 *ملاحظة:* ${orderData.clientNote || 'لا يوجد'}\n\n` +
-                `✅ *يرجى تأكيد استلام الطلب*`;
-            
-            // إنشاء رابط واتساب وفتحه
-            const encodedMessage = encodeURIComponent(message);
-            const whatsappUrl = `https://wa.me/${driverPhone}?text=${encodedMessage}`;
-            
-            // فتح واتساب في نافذة جديدة
-            window.open(whatsappUrl, '_blank');
-            
-            console.log('✅ تم فتح واتساب للسائق:', driverName);
+        const { data: drivers } = await db.from('drivers').select('*').eq('status', 'available');
+        list.innerHTML = '';
+        if (!drivers || drivers.length === 0) {
+            list.innerHTML = '<li style="text-align:center; padding:20px; color:var(--text-body);">لا يوجد سائقين متوفرين حالياً</li>';
+            return;
         }
-        
+        drivers.forEach(d => {
+            const li = document.createElement('li');
+            li.className = 'driver-select-item';
+            li.innerHTML = `
+                <div>
+                    <strong style="font-size:1.1em;">🚗 ${d.name}</strong>
+                    <br><span style="font-size:0.9em;">📞 ${d.phone || 'لا يوجد رقم'}</span>
+                </div>
+                <span style="font-size:1.5em;">📱</span>`;
+            li.onclick = () => assignDriverAndProceed(d.id, d.name, d.phone, currentOrdersData[pendingOrderIdForDriver]);
+            list.appendChild(li);
+        });
+    }
+
+    window.assignDriverAndProceed = async (driverId, driverName, driverPhone, orderData) => {
+        if (!pendingOrderIdForDriver) return;
+        await db.from('orders').update({ status: 'preparing', driver_id: driverId, driver_name: driverName }).eq('id', pendingOrderIdForDriver);
+        await db.from('drivers').update({ status: 'busy' }).eq('id', driverId);
+        if (driverPhone && orderData) {
+            const shortId = pendingOrderIdForDriver.substring(0, 8);
+            let itemsList = '';
+            (orderData.order_items || []).forEach(i => { itemsList += `• ${i.quantity || 1}x ${i.item_name}\n`; });
+            const message =
+                `🚚 *طلب توصيل جديد*\n\n` +
+                `📋 *رقم الطلب:* #${shortId}\n` +
+                `👤 *العميل:* ${orderData.client_name}\n` +
+                `📞 *الهاتف:* ${orderData.client_phone}\n` +
+                `📍 *العنوان:* ${orderData.delivery_address || 'غير محدد'}\n\n` +
+                `📦 *الطلبات:*\n${itemsList}\n` +
+                `💰 *المجموع:* ${orderData.total_amount} د.ع\n` +
+                `📝 *ملاحظة:* ${orderData.client_note || 'لا يوجد'}\n\n` +
+                `✅ *يرجى تأكيد استلام الطلب*`;
+            window.open(`https://wa.me/${driverPhone}?text=${encodeURIComponent(message)}`, '_blank');
+        }
         closeDriverModal();
     };
-    
-    async function releaseDriverIfAssigned(orderData) {
-        if(!orderData?.driverId) return;
-        const snap = await new Promise(res => onValue(ref(db, 'orders'), s => res(s.val()), {onlyOnce: true}));
-        let other = false;
-        if(snap) for(let oid in snap) if(snap[oid].driverId === orderData.driverId && (snap[oid].status === 'preparing' || snap[oid].status === 'delivering') && oid !== orderData._orderId) { other = true; break; }
-        if(!other) await update(ref(db, `drivers/${orderData.driverId}`), { status: 'available' });
+
+    async function releaseDriverIfAssigned(order) {
+        if (!order?.driver_id) return;
+        const { data: active } = await db.from('orders').select('id')
+            .eq('driver_id', order.driver_id)
+            .in('status', ['preparing', 'delivering'])
+            .neq('id', order.id);
+        if (!active || active.length === 0) {
+            await db.from('drivers').update({ status: 'available' }).eq('id', order.driver_id);
+        }
     }
 
-    window.updateOrderStatus = (orderId, next) => {
-        if(next === 'preparing') {
-            onValue(ref(db, `orders/${orderId}`), snap => {
-                if(snap.val()?.driverId) update(ref(db, `orders/${orderId}`), { status: 'preparing' });
-                else openDriverModal(orderId);
-            }, {onlyOnce: true});
-        } else if(next === 'delivering') update(ref(db, `orders/${orderId}`), { status: 'delivering' });
-        else if(next === 'completed') {
-            onValue(ref(db, `orders/${orderId}`), snap => {
-                const d = snap.val(); if(d) { d._orderId = orderId; releaseDriverIfAssigned(d); }
-                update(ref(db, `orders/${orderId}`), { status: 'completed' });
-            }, {onlyOnce: true});
-        }
-    };
-    window.deleteOrderImmediate = (orderId) => {
-        if(confirm('مسح الطلب؟')) {
-            onValue(ref(db, `orders/${orderId}`), snap => {
-                const d = snap.val(); if(d) { d._orderId = orderId; releaseDriverIfAssigned(d); }
-                remove(ref(db, `orders/${orderId}`));
-            }, {onlyOnce: true});
+    // ===== ORDER STATUS =====
+    window.updateOrderStatus = async (orderId, next) => {
+        if (next === 'preparing') {
+            const { data: order } = await db.from('orders').select('driver_id').eq('id', orderId).single();
+            if (order?.driver_id) await db.from('orders').update({ status: 'preparing' }).eq('id', orderId);
+            else openDriverModal(orderId);
+        } else if (next === 'delivering') {
+            await db.from('orders').update({ status: 'delivering' }).eq('id', orderId);
+        } else if (next === 'completed') {
+            const { data: order } = await db.from('orders').select('*').eq('id', orderId).single();
+            if (order) await releaseDriverIfAssigned(order);
+            await db.from('orders').update({ status: 'completed' }).eq('id', orderId);
         }
     };
 
-    window.addDriver = () => {
+    window.deleteOrderImmediate = async (orderId) => {
+        if (!confirm('مسح الطلب؟')) return;
+        const { data: order } = await db.from('orders').select('*').eq('id', orderId).single();
+        if (order) await releaseDriverIfAssigned(order);
+        await db.from('orders').delete().eq('id', orderId);
+    };
+
+    // ===== ORDER DETAIL MODAL =====
+    window.showOrderDetail = (orderId) => {
+        const o = currentOrdersData[orderId];
+        if (!o) return;
+        let itemsHtml = '';
+        (o.order_items || []).forEach(i => { itemsHtml += `<div class="item"><span>${i.quantity || 1}× ${i.item_name}</span></div>`; });
+        const note = o.client_note ? `<p><strong>💬 ملاحظة:</strong> ${o.client_note}</p>` : '';
+        const driver = o.driver_name ? `<p><strong>🚗 السائق:</strong> ${o.driver_name}</p>` : '';
+        const progress = o.delivery_progress || 0;
+        document.getElementById('order-detail-content').innerHTML = `
+            <div class="order-detail-row"><span>رقم الطلب</span><span>#${orderId.substring(0, 8)}</span></div>
+            <div class="order-detail-row"><span>👤 العميل</span><span>${o.client_name || ''}</span></div>
+            <div class="order-detail-row"><span>📞 الهاتف</span><span><a href="tel:${o.client_phone}">${o.client_phone || ''}</a></span></div>
+            <div class="order-detail-row"><span>📍 العنوان</span><span>${o.delivery_address || 'غير محدد'}</span></div>
+            <div class="items-list-modal"><strong>📦 الوجبات المطلوبة:</strong>${itemsHtml}</div>
+            ${note}${driver}
+            <div class="order-detail-row"><span>💰 المجموع</span><span style="color:var(--success); font-size:1.2em;">${o.total_amount} د.ع</span></div>
+            <div style="margin-top:15px;"><span>🚚 تقدم التوصيل:</span><div class="progress-bar-container" style="margin-top:5px;"><div class="progress-bar-fill" style="width:${progress}%"></div></div><small>${progress}% مكتمل</small></div>
+            <button class="btn-success" style="margin-top:15px;" onclick="updateOrderStatus('${orderId}','completed'); document.getElementById('order-detail-modal').style.display='none'">✅ تم التوصيل</button>`;
+        document.getElementById('order-detail-modal').style.display = 'flex';
+    };
+
+    // ===== LOAD & RENDER ORDERS =====
+    async function loadOrders() {
+        const { data: orders } = await db.from('orders')
+            .select('*, order_items(*)')
+            .order('created_at', { ascending: false });
+        renderOrders(orders || []);
+    }
+
+    function renderOrders(orders) {
+        const pendContainer = document.getElementById('container-pending');
+        const prepTbody = document.getElementById('preparing-tbody');
+        const delContainer = document.getElementById('delivering-cards-container');
+        const compContainer = document.getElementById('container-completed');
+        pendContainer.innerHTML = ''; prepTbody.innerHTML = ''; delContainer.innerHTML = ''; compContainer.innerHTML = '';
+        currentOrdersData = {};
+
+        let np = 0, npr = 0, nd = 0, nc = 0, rev = 0;
+        const deliveringByDriver = {};
+
+        orders.forEach(o => {
+            currentOrdersData[o.id] = o;
+            const st = o.status || 'pending';
+            const oi = o.order_items || [];
+
+            if (st === 'preparing') {
+                npr++;
+                let itemsHtml = '';
+                oi.forEach(i => itemsHtml += `<span class="item-qty">${i.quantity || 1}×</span> ${i.item_name}<br>`);
+                prepTbody.innerHTML += `<tr>
+                    <td>${o.id.substring(0, 8)}</td>
+                    <td>${o.client_name || ''}</td>
+                    <td><a href="tel:${o.client_phone}">${o.client_phone || ''}</a></td>
+                    <td>${o.delivery_address || '-'}</td>
+                    <td class="order-items-cell">${itemsHtml}</td>
+                    <td>${o.client_note ? '<span class="note-cell">' + o.client_note + '</span>' : '-'}</td>
+                    <td class="driver-cell">${o.driver_name || 'غير محدد'}</td>
+                    <td>${o.total_amount} د.ع</td>
+                    <td><span class="badge-preparing">⏳ قيد التجهيز</span></td>
+                    <td><button class="mini-btn btn-purple" onclick="updateOrderStatus('${o.id}','delivering')">🚚 بدء التوصيل</button></td>
+                </tr>`;
+            } else if (st === 'delivering') {
+                nd++;
+                const dk = o.driver_id || 'unknown';
+                if (!deliveringByDriver[dk]) deliveringByDriver[dk] = { driverName: o.driver_name || 'بدون اسم', orders: [] };
+                deliveringByDriver[dk].orders.push(o);
+            } else if (st === 'pending') {
+                np++;
+                let items = '';
+                oi.forEach(i => items += `<div class="item-row"><span><strong>${i.quantity || 1}×</strong> ${i.item_name}</span></div>`);
+                pendContainer.innerHTML += `<div class="order-card status-pending">
+                    <span class="status-label lbl-pending">📥 طلب جديد</span>
+                    <div class="order-info" style="margin-top:15px;">
+                        <p>👤 ${o.client_name || ''}</p>
+                        <p>📞 <a href="tel:${o.client_phone}">${o.client_phone || ''}</a></p>
+                        <p>📍 ${o.delivery_address || 'غير محدد'}</p>
+                        <div class="order-items-list">${items}${o.client_note ? `<div class="order-note-box">💡 ${o.client_note}</div>` : ''}</div>
+                    </div>
+                    <div class="order-total-price">💰 ${o.total_amount} د.ع</div>
+                    <button class="btn-info" onclick="updateOrderStatus('${o.id}','preparing')">قبول وبدء التجهيز</button>
+                </div>`;
+            } else if (st === 'completed') {
+                nc++;
+                rev += parseFloat(o.total_amount) || 0;
+                let items = '';
+                oi.forEach(i => items += `<div class="item-row"><span><strong>${i.quantity || 1}×</strong> ${i.item_name}</span></div>`);
+                compContainer.innerHTML += `<div class="order-card status-completed">
+                    <span class="status-label lbl-completed">✅ جاهز</span>
+                    <div class="order-info" style="margin-top:15px;">
+                        <p>👤 ${o.client_name || ''}</p>
+                        <p>📞 ${o.client_phone || ''}</p>
+                        <p>📍 ${o.delivery_address || 'غير محدد'}</p>
+                        <div class="order-items-list">${items}</div>
+                    </div>
+                    <div class="order-total-price">💰 ${o.total_amount} د.ع</div>
+                    <button class="btn-danger" onclick="deleteOrderImmediate('${o.id}')">🗑️ أرشفة ومسح</button>
+                </div>`;
+            }
+        });
+
+        for (let dk in deliveringByDriver) {
+            const group = deliveringByDriver[dk];
+            let cardsHtml = '';
+            group.orders.forEach(order => {
+                const progress = order.delivery_progress || 0;
+                cardsHtml += `<div class="delivery-card" onclick="showOrderDetail('${order.id}')">
+                    <div class="order-id">#${order.id.substring(0, 8)}</div>
+                    <div class="customer">👤 ${order.client_name}</div>
+                    <div class="total">💰 ${order.total_amount} د.ع</div>
+                    <div class="progress-bar-container"><div class="progress-bar-fill" style="width:${progress}%"></div></div>
+                    <small style="color:var(--text-body); margin-top:5px;">${progress}% مكتمل</small>
+                </div>`;
+            });
+            delContainer.innerHTML += `<div class="driver-group">
+                <div class="driver-group-header">🚚 ${group.driverName}</div>
+                <div class="driver-group-cards">${cardsHtml}</div>
+            </div>`;
+        }
+
+        document.getElementById('count-pending').innerText = np;
+        document.getElementById('count-preparing').innerText = npr;
+        document.getElementById('count-delivering').innerText = nd;
+        document.getElementById('count-completed').innerText = nc;
+        document.getElementById('stats-revenue').innerText = rev.toLocaleString() + ' د.ع';
+        document.getElementById('stats-completed-count').innerText = nc + ' طلب';
+        document.getElementById('stats-preparing-count').innerText = npr + ' طلب';
+        document.getElementById('stats-delivering-count').innerText = nd + ' طلب';
+
+        const snd = document.getElementById('notification-sound');
+        if (np > 0) snd.play().catch(() => {}); else { snd.pause(); snd.currentTime = 0; }
+        if (np === 0) pendContainer.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد طلبات واردة</p>';
+        if (nc === 0) compContainer.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد طلبات مكتملة</p>';
+        if (nd === 0) delContainer.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد طلبات قيد التوصيل</p>';
+    }
+
+    // ===== LOAD & RENDER DRIVERS =====
+    async function loadDrivers() {
+        const { data: drivers } = await db.from('drivers').select('*').order('created_at');
+        const cont = document.getElementById('drivers-list-container');
+        const list = drivers || [];
+        document.getElementById('count-drivers').innerText = list.length;
+        if (list.length === 0) {
+            cont.innerHTML = '<p>لا يوجد سائقين</p>';
+            document.getElementById('stats-available-drivers').innerText = '0 سائق';
+            return;
+        }
+        let av = 0, html = '';
+        list.forEach(d => {
+            if (d.status === 'available') av++;
+            html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid var(--border);">
+                <div><strong>${d.name}</strong><br>📞 ${d.phone || ''} <span class="badge-status ${d.status === 'available' ? 'bg-av' : 'bg-busy'}">${d.status === 'available' ? 'متوفر' : 'مشغول'}</span></div>
+                <div><button class="mini-btn btn-info" onclick="toggleDriverStatus('${d.id}','${d.status}')">تبديل</button><button class="mini-btn btn-danger" onclick="deleteDriver('${d.id}')">حذف</button></div>
+            </div>`;
+        });
+        cont.innerHTML = html;
+        document.getElementById('stats-available-drivers').innerText = av + ' سائق';
+    }
+
+    window.addDriver = async () => {
         const n = document.getElementById('driver-name-input').value.trim();
         const p = document.getElementById('driver-phone-input').value.trim();
         const s = document.getElementById('driver-status-input').value;
-        if(!n) return;
-        if(!p) return alert('الرجاء إدخال رقم الهاتف');
-        push(ref(db, 'drivers'), { name: n, phone: p, status: s }).then(() => {
-            document.getElementById('driver-name-input').value = '';
-            document.getElementById('driver-phone-input').value = '';
-            alert('✅ تم إضافة السائق بنجاح');
-        });
+        if (!n) return;
+        if (!p) return alert('الرجاء إدخال رقم الهاتف');
+        await db.from('drivers').insert({ name: n, phone: p, status: s });
+        document.getElementById('driver-name-input').value = '';
+        document.getElementById('driver-phone-input').value = '';
+        alert('✅ تم إضافة السائق بنجاح');
     };
-    window.deleteDriver = (id) => { if(confirm('حذف السائق؟')) remove(ref(db, `drivers/${id}`)); };
-    window.toggleDriverStatus = (id, cur) => update(ref(db, `drivers/${id}`), { status: cur === 'available' ? 'busy' : 'available' });
+    window.deleteDriver = async (id) => { if (confirm('حذف السائق؟')) await db.from('drivers').delete().eq('id', id); };
+    window.toggleDriverStatus = async (id, cur) => { await db.from('drivers').update({ status: cur === 'available' ? 'busy' : 'available' }).eq('id', id); };
 
-    function uploadImageFile(file, callback) {
-        const filePath = `images/${Date.now()}_${file.name}`;
-        const uploadTask = uploadBytesResumable(storageRef(storage, filePath), file);
-        uploadTask.on('state_changed', null, err => alert('فشل الرفع'), () => { getDownloadURL(uploadTask.snapshot.ref).then(url => callback(url)); });
+    // ===== IMAGE UPLOAD (Supabase Storage) =====
+    async function uploadImageFile(file, callback) {
+        const path = `${Date.now()}_${file.name}`;
+        const { error } = await db.storage.from('images').upload(path, file);
+        if (error) { alert('فشل الرفع: ' + error.message); return; }
+        const { data: { publicUrl } } = db.storage.from('images').getPublicUrl(path);
+        callback(publicUrl);
     }
-    window.handleMealImageUpload = (input) => { if(input.files[0]) uploadImageFile(input.files[0], url => { document.getElementById('meal-image').value = url; document.getElementById('meal-image-preview').innerHTML = `<img src="${url}">`; }); };
-    window.handleEditMealImageUpload = (input) => { if(input.files[0]) uploadImageFile(input.files[0], url => { document.getElementById('edit-meal-image').value = url; document.getElementById('edit-meal-image-preview').innerHTML = `<img src="${url}">`; }); };
-    window.handleExtraImageUpload = (input) => { if(input.files[0]) uploadImageFile(input.files[0], url => { document.getElementById('new-extra-image').value = url; document.getElementById('extra-image-preview').innerHTML = `<img src="${url}">`; }); };
-    document.getElementById('meal-image').addEventListener('input', function() { document.getElementById('meal-image-preview').innerHTML = this.value ? `<img src="${this.value}">` : ''; });
-    document.getElementById('edit-meal-image').addEventListener('input', function() { document.getElementById('edit-meal-image-preview').innerHTML = this.value ? `<img src="${this.value}">` : ''; });
-    document.getElementById('new-extra-image').addEventListener('input', function() { document.getElementById('extra-image-preview').innerHTML = this.value ? `<img src="${this.value}">` : ''; });
+    window.handleMealImageUpload = (input) => { if (input.files[0]) uploadImageFile(input.files[0], url => { document.getElementById('meal-image').value = url; document.getElementById('meal-image-preview').innerHTML = `<img src="${url}">`; }); };
+    window.handleEditMealImageUpload = (input) => { if (input.files[0]) uploadImageFile(input.files[0], url => { document.getElementById('edit-meal-image').value = url; document.getElementById('edit-meal-image-preview').innerHTML = `<img src="${url}">`; }); };
+    window.handleExtraImageUpload = (input) => { if (input.files[0]) uploadImageFile(input.files[0], url => { document.getElementById('new-extra-image').value = url; document.getElementById('extra-image-preview').innerHTML = `<img src="${url}">`; }); };
+    document.getElementById('meal-image').addEventListener('input', function () { document.getElementById('meal-image-preview').innerHTML = this.value ? `<img src="${this.value}">` : ''; });
+    document.getElementById('edit-meal-image').addEventListener('input', function () { document.getElementById('edit-meal-image-preview').innerHTML = this.value ? `<img src="${this.value}">` : ''; });
+    document.getElementById('new-extra-image').addEventListener('input', function () { document.getElementById('extra-image-preview').innerHTML = this.value ? `<img src="${this.value}">` : ''; });
 
-    window.addCategory = () => { const n = document.getElementById('cat-name').value.trim(); if(n) push(ref(db, 'categories'), { name: n }).then(() => document.getElementById('cat-name').value = ''); };
-    window.deleteCategory = (id) => { if(confirm('حذف القسم؟')) { remove(ref(db, `categories/${id}`)); remove(ref(db, `meals/${id}`)); } };
+    // ===== CATEGORIES & MENU =====
+    window.addCategory = async () => {
+        const n = document.getElementById('cat-name').value.trim();
+        if (n) { await db.from('categories').insert({ name: n }); document.getElementById('cat-name').value = ''; }
+    };
+    window.deleteCategory = async (id) => { if (confirm('حذف القسم؟')) await db.from('categories').delete().eq('id', id); };
 
-    window.addMeal = () => {
+    async function loadMenu() {
+        const { data: categories } = await db.from('categories').select('*').order('created_at');
+        const { data: items } = await db.from('items').select('*').order('created_at');
+        renderMenu(categories || [], items || []);
+    }
+
+    function renderMenu(categories, items) {
+        const select = document.getElementById('meal-cat-select');
+        const container = document.getElementById('menu-structure');
+        select.innerHTML = '<option value="">اختر الصنف...</option>';
+        container.innerHTML = '';
+        if (categories.length === 0) { container.innerHTML = '<p>لا توجد أصناف</p>'; return; }
+
+        let colorIdx = 0;
+        categories.forEach(cat => {
+            select.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+            const cls = `cat-color-${colorIdx % 7}`;
+            const badge = `badge-color-${colorIdx % 7}`;
+            colorIdx++;
+            const catItems = items.filter(i => i.category_id === cat.id);
+            let mealsHtml = '';
+            if (catItems.length > 0) {
+                catItems.forEach(m => {
+                    const isAv = m.is_available;
+                    const imgTag = m.image_url
+                        ? `<img src="${m.image_url}" class="meal-thumb">`
+                        : '<div class="meal-thumb" style="background:var(--body-bg); display:flex; align-items:center; justify-content:center; font-size:2em;">🍽️</div>';
+                    const descEsc = (m.description || '').replace(/'/g, "\\'");
+                    mealsHtml += `
+                    <div class="meal-card">
+                        ${imgTag}
+                        <div class="meal-name">${m.name}</div>
+                        <div class="meal-price">${m.price} د.ع</div>
+                        <div class="toggle-row">
+                            <span style="font-size:0.85em;">${isAv ? '🟢 متوفر' : '🔴 غير متوفر'}</span>
+                            <label class="switch">
+                                <input type="checkbox" ${isAv ? 'checked' : ''} onchange="toggleStatus('${m.id}', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="card-actions">
+                            <button class="mini-btn btn-info" onclick="triggerEdit('${m.id}','${m.name}','${m.price}','${isAv}','${descEsc}','${m.image_url || ''}')">✏️ تعديل</button>
+                            <button class="mini-btn btn-purple" onclick="openExtrasModal('${m.id}')">⚙️ إضافات</button>
+                            <button class="mini-btn btn-danger" onclick="deleteMeal('${m.id}')">🗑️</button>
+                        </div>
+                    </div>`;
+                });
+            } else {
+                mealsHtml = '<p style="grid-column:1/-1; color:var(--text-body);">لا توجد وجبات في هذا القسم</p>';
+            }
+            container.innerHTML += `<div class="cat-card-modern ${cls}">
+                <div class="cat-card-header">
+                    <span class="badge-status ${badge}" style="font-size:1em;">📁 ${cat.name}</span>
+                    <button class="mini-btn btn-danger" onclick="deleteCategory('${cat.id}')">حذف القسم</button>
+                </div>
+                <div class="meals-grid">${mealsHtml}</div>
+            </div>`;
+        });
+    }
+
+    window.addMeal = async () => {
         const catId = document.getElementById('meal-cat-select').value;
         const name = document.getElementById('meal-name').value.trim();
         const desc = document.getElementById('meal-desc').value.trim();
-        const price = parseInt(convertArabicNumbers(document.getElementById('meal-price').value.trim()));
+        const price = parseFloat(convertArabicNumbers(document.getElementById('meal-price').value.trim()));
         const image = document.getElementById('meal-image').value.trim();
         const status = document.getElementById('meal-status').value;
-        if(!catId || !name || isNaN(price)) return alert('تأكد من البيانات');
-        push(ref(db, `meals/${catId}`), { name, description: desc, price, image, status }).then(() => {
-            ['meal-name','meal-desc','meal-price','meal-image'].forEach(id => document.getElementById(id).value = '');
-            document.getElementById('meal-image-preview').innerHTML = '';
-        });
+        if (!catId || !name || isNaN(price)) return alert('تأكد من البيانات');
+        await db.from('items').insert({ category_id: catId, name, description: desc, price, image_url: image || null, is_available: status === 'available' });
+        ['meal-name', 'meal-desc', 'meal-price', 'meal-image'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('meal-image-preview').innerHTML = '';
     };
 
-    window.triggerEdit = (catId, mealId, name, price, status, desc, image) => {
+    window.triggerEdit = (id, name, price, isAvailable, desc, image) => {
         document.getElementById('edit-meal-modal').style.display = 'flex';
-        document.getElementById('edit-meal-id').value = `${catId}/${mealId}`;
+        document.getElementById('edit-meal-id').value = id;
         document.getElementById('edit-meal-name').value = name;
         document.getElementById('edit-meal-price').value = price;
         document.getElementById('edit-meal-desc').value = desc || '';
         document.getElementById('edit-meal-image').value = image || '';
-        document.getElementById('edit-meal-status').value = status;
+        document.getElementById('edit-meal-status').value = isAvailable === 'true' || isAvailable === true ? 'available' : 'unavailable';
         document.getElementById('edit-meal-image-preview').innerHTML = image ? `<img src="${image}">` : '';
     };
 
-    window.saveEditMeal = () => {
-        const path = document.getElementById('edit-meal-id').value;
+    window.saveEditMeal = async () => {
+        const id = document.getElementById('edit-meal-id').value;
         const name = document.getElementById('edit-meal-name').value.trim();
-        const price = parseInt(convertArabicNumbers(document.getElementById('edit-meal-price').value.trim()));
+        const price = parseFloat(convertArabicNumbers(document.getElementById('edit-meal-price').value.trim()));
         const desc = document.getElementById('edit-meal-desc').value.trim();
         const image = document.getElementById('edit-meal-image').value.trim();
         const status = document.getElementById('edit-meal-status').value;
-        if(!name || isNaN(price)) return alert('الاسم والسعر مطلوبان');
-        update(ref(db, `meals/${path}`), { name, price, description: desc, image, status }).then(() => {
-            document.getElementById('edit-meal-modal').style.display = 'none';
-        });
+        if (!name || isNaN(price)) return alert('الاسم والسعر مطلوبان');
+        await db.from('items').update({ name, price, description: desc, image_url: image || null, is_available: status === 'available' }).eq('id', id);
+        document.getElementById('edit-meal-modal').style.display = 'none';
     };
 
-    window.deleteMeal = (catId, mealId) => { if(confirm('حذف الوجبة؟')) { remove(ref(db, `meals/${catId}/${mealId}`)); remove(ref(db, `extras/${mealId}`)); } };
-    window.toggleStatus = (catId, mealId, cur) => update(ref(db, `meals/${catId}/${mealId}`), { status: cur === 'available' ? 'unavailable' : 'available' });
+    window.deleteMeal = async (id) => { if (confirm('حذف الوجبة؟')) await db.from('items').delete().eq('id', id); };
+    window.toggleStatus = async (id, checked) => { await db.from('items').update({ is_available: checked }).eq('id', id); };
 
+    // ===== EXTRAS =====
     window.openExtrasModal = (mealId) => {
+        currentExtrasItemId = mealId;
         document.getElementById('current-extras-meal-id').value = mealId;
         document.getElementById('extras-modal-overlay').style.display = 'flex';
         document.getElementById('new-extra-name').value = '';
@@ -475,214 +652,66 @@
         loadExtrasForMeal(mealId);
     };
     window.closeExtrasModal = () => { document.getElementById('extras-modal-overlay').style.display = 'none'; };
-    function loadExtrasForMeal(mealId) {
+
+    async function loadExtrasForMeal(mealId) {
         const container = document.getElementById('extras-list-container');
-        onValue(ref(db, `extras/${mealId}`), snap => {
-            const extras = snap.val();
-            container.innerHTML = '';
-            if(!extras) { container.innerHTML = '<p style="color:var(--text-body);">لا توجد إضافات بعد.</p>'; return; }
-            Object.entries(extras).forEach(([extraId, extra]) => {
-                const img = extra.image ? `<img src="${extra.image}" class="extra-thumb">` : '';
-                const div = document.createElement('div');
-                div.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:var(--body-bg); padding:8px 12px; border-radius:8px; margin-bottom:6px;';
-                div.innerHTML = `<span>${img} <strong>${extra.name}</strong> - ${extra.price} د.ع</span>
-                    <span><button class="mini-btn btn-info" onclick="editExtra('${mealId}','${extraId}','${extra.name}','${extra.price}','${extra.image||''}')">✏️</button><button class="mini-btn btn-danger" onclick="deleteExtra('${mealId}','${extraId}')">🗑️</button></span>`;
-                container.appendChild(div);
-            });
-        }, {onlyOnce: false});
+        const { data: extras } = await db.from('extras').select('*').eq('item_id', mealId);
+        container.innerHTML = '';
+        if (!extras || extras.length === 0) { container.innerHTML = '<p style="color:var(--text-body);">لا توجد إضافات بعد.</p>'; return; }
+        extras.forEach(extra => {
+            const img = extra.image_url ? `<img src="${extra.image_url}" class="extra-thumb">` : '';
+            const div = document.createElement('div');
+            div.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:var(--body-bg); padding:8px 12px; border-radius:8px; margin-bottom:6px;';
+            div.innerHTML = `<span>${img} <strong>${extra.name}</strong> - ${extra.price} د.ع</span>
+                <span>
+                    <button class="mini-btn btn-info" onclick="editExtra('${extra.id}','${extra.name}','${extra.price}','${extra.image_url || ''}')">✏️</button>
+                    <button class="mini-btn btn-danger" onclick="deleteExtra('${extra.id}')">🗑️</button>
+                </span>`;
+            container.appendChild(div);
+        });
     }
-    window.addExtra = () => {
+
+    window.addExtra = async () => {
         const mealId = document.getElementById('current-extras-meal-id').value;
         const name = document.getElementById('new-extra-name').value.trim();
-        const price = parseInt(convertArabicNumbers(document.getElementById('new-extra-price').value.trim()));
+        const price = parseFloat(convertArabicNumbers(document.getElementById('new-extra-price').value.trim()));
         const image = document.getElementById('new-extra-image').value.trim();
-        if(!name || isNaN(price)) return alert('أدخل اسم وسعر الإضافة');
-        push(ref(db, `extras/${mealId}`), { name, price, image }).then(() => {
-            document.getElementById('new-extra-name').value = '';
-            document.getElementById('new-extra-price').value = '';
-            document.getElementById('new-extra-image').value = '';
-            document.getElementById('extra-image-preview').innerHTML = '';
-        });
-    };
-    window.deleteExtra = (mealId, extraId) => { if(confirm('حذف الإضافة؟')) remove(ref(db, `extras/${mealId}/${extraId}`)); };
-    window.editExtra = (mealId, extraId, oldName, oldPrice, oldImage) => {
-        const newName = prompt('اسم الإضافة الجديد:', oldName);
-        if(newName === null) return;
-        const newPrice = prompt('السعر الجديد:', oldPrice);
-        if(newPrice === null) return;
-        const newImage = prompt('رابط الصورة الجديد (اتركه فارغاً للإبقاء على القديم):', oldImage||'');
-        if(newImage === null) return;
-        const priceNum = parseInt(convertArabicNumbers(newPrice));
-        if(isNaN(priceNum)) return alert('سعر غير صحيح');
-        update(ref(db, `extras/${mealId}/${extraId}`), { name: newName.trim(), price: priceNum, image: newImage.trim() });
+        if (!name || isNaN(price)) return alert('أدخل اسم وسعر الإضافة');
+        await db.from('extras').insert({ item_id: mealId, name, price, image_url: image || null });
+        document.getElementById('new-extra-name').value = '';
+        document.getElementById('new-extra-price').value = '';
+        document.getElementById('new-extra-image').value = '';
+        document.getElementById('extra-image-preview').innerHTML = '';
+        loadExtrasForMeal(mealId);
     };
 
-    onValue(ref(db, 'categories'), catSnap => {
-        const categories = catSnap.val();
-        const select = document.getElementById('meal-cat-select');
-        const container = document.getElementById('menu-structure');
-        select.innerHTML = '<option value="">اختر الصنف...</option>';
-        container.innerHTML = '';
-        if(!categories) { container.innerHTML = '<p>لا توجد أصناف</p>'; return; }
-
-        onValue(ref(db, 'meals'), mealSnap => {
-            const allMeals = mealSnap.val() || {};
-            container.innerHTML = '';
-            select.innerHTML = '<option value="">اختر الصنف...</option>';
-            let colorIdx = 0;
-
-            for(let catId in categories) {
-                select.innerHTML += `<option value="${catId}">${categories[catId].name}</option>`;
-                const cls = `cat-color-${colorIdx%7}`;
-                const badge = `badge-color-${colorIdx%7}`;
-                colorIdx++;
-
-                let html = `<div class="cat-card-modern ${cls}">
-                    <div class="cat-card-header">
-                        <span class="badge-status ${badge}" style="font-size:1em;">📁 ${categories[catId].name}</span>
-                        <button class="mini-btn btn-danger" onclick="deleteCategory('${catId}')">حذف القسم</button>
-                    </div>
-                    <div class="meals-grid" id="meals-grid-${catId}">`;
-
-                const meals = allMeals[catId];
-                if(meals) {
-                    for(let mealId in meals) {
-                        const m = meals[mealId];
-                        const isAv = m.status === 'available';
-                        const imgTag = m.image ? `<img src="${m.image}" class="meal-thumb">` : '<div class="meal-thumb" style="background:var(--body-bg); display:flex; align-items:center; justify-content:center; font-size:2em;">🍽️</div>';
-                        html += `
-                        <div class="meal-card">
-                            ${imgTag}
-                            <div class="meal-name">${m.name}</div>
-                            <div class="meal-price">${m.price} د.ع</div>
-                            <div class="toggle-row">
-                                <span style="font-size:0.85em;">${isAv ? '🟢 متوفر' : '🔴 غير متوفر'}</span>
-                                <label class="switch">
-                                    <input type="checkbox" ${isAv?'checked':''} onchange="toggleStatus('${catId}','${mealId}','${m.status}')">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="card-actions">
-                                <button class="mini-btn btn-info" onclick="triggerEdit('${catId}','${mealId}','${m.name}','${m.price}','${m.status}','${(m.description||'').replace(/'/g,"\\'")}','${m.image||''}')">✏️ تعديل</button>
-                                <button class="mini-btn btn-purple" onclick="openExtrasModal('${mealId}')">⚙️ إضافات</button>
-                                <button class="mini-btn btn-danger" onclick="deleteMeal('${catId}','${mealId}')">🗑️</button>
-                            </div>
-                        </div>`;
-                    }
-                } else {
-                    html += '<p style="grid-column:1/-1; color:var(--text-body);">لا توجد وجبات في هذا القسم</p>';
-                }
-                html += '</div></div>';
-                container.innerHTML += html;
-            }
-        });
-    });
-
-    onValue(ref(db, 'drivers'), snap => {
-        const drivers = snap.val();
-        const cont = document.getElementById('drivers-list-container');
-        document.getElementById('count-drivers').innerText = drivers ? Object.keys(drivers).length : 0;
-        let av = 0;
-        if(!drivers) { cont.innerHTML = '<p>لا يوجد سائقين</p>'; document.getElementById('stats-available-drivers').innerText='0 سائق'; return; }
-        let html = '';
-        Object.entries(drivers).forEach(([id, d]) => {
-            if(d.status==='available') av++;
-            html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid var(--border);"><div><strong>${d.name}</strong><br>📞 ${d.phone||''} <span class="badge-status ${d.status==='available'?'bg-av':'bg-busy'}">${d.status==='available'?'متوفر':'مشغول'}</span></div><div><button class="mini-btn btn-info" onclick="toggleDriverStatus('${id}','${d.status}')">تبديل</button><button class="mini-btn btn-danger" onclick="deleteDriver('${id}')">حذف</button></div></div>`;
-        });
-        cont.innerHTML = html;
-        document.getElementById('stats-available-drivers').innerText = av + ' سائق';
-    });
-
-    window.showOrderDetail = (orderId) => {
-        const o = currentOrdersData[orderId];
-        if(!o) return;
-        let itemsHtml = '';
-        if(o.items && Array.isArray(o.items)) {
-            o.items.forEach(i => { itemsHtml += `<div class="item"><span>${i.quantity||1}× ${i.name}</span></div>`; });
-        }
-        const note = o.clientNote ? `<p><strong>💬 ملاحظة:</strong> ${o.clientNote}</p>` : '';
-        const driver = o.driverName ? `<p><strong>🚗 السائق:</strong> ${o.driverName}</p>` : '';
-        const progress = o.deliveryProgress || 0;
-        const content = `
-            <div class="order-detail-row"><span>رقم الطلب</span><span>#${orderId.substring(0,6)}</span></div>
-            <div class="order-detail-row"><span>👤 العميل</span><span>${o.clientName}</span></div>
-            <div class="order-detail-row"><span>📞 الهاتف</span><span><a href="tel:${o.clientPhone}">${o.clientPhone}</a></span></div>
-            <div class="order-detail-row"><span>📍 العنوان</span><span>${o.clientAddress || 'غير محدد'}</span></div>
-            <div class="items-list-modal"><strong>📦 الوجبات المطلوبة:</strong>${itemsHtml}</div>
-            ${note}${driver}
-            <div class="order-detail-row"><span>💰 المجموع</span><span style="color:var(--success); font-size:1.2em;">${o.total} د.ع</span></div>
-            <div style="margin-top:15px;"><span>🚚 تقدم التوصيل:</span><div class="progress-bar-container" style="margin-top:5px;"><div class="progress-bar-fill" style="width:${progress}%"></div></div><small>${progress}% مكتمل</small></div>
-            <button class="btn-success" style="margin-top:15px;" onclick="updateOrderStatus('${orderId}', 'completed'); document.getElementById('order-detail-modal').style.display='none'">✅ تم التوصيل</button>`;
-        document.getElementById('order-detail-content').innerHTML = content;
-        document.getElementById('order-detail-modal').style.display = 'flex';
+    window.deleteExtra = async (id) => {
+        if (confirm('حذف الإضافة؟')) { await db.from('extras').delete().eq('id', id); loadExtrasForMeal(currentExtrasItemId); }
     };
 
-    onValue(ref(db, 'orders'), snap => {
-        const data = snap.val();
-        currentOrdersData = data || {};
-        const pendContainer = document.getElementById('container-pending');
-        const prepTbody = document.getElementById('preparing-tbody');
-        const delContainer = document.getElementById('delivering-cards-container');
-        const compContainer = document.getElementById('container-completed');
-        pendContainer.innerHTML = ''; prepTbody.innerHTML = ''; delContainer.innerHTML = ''; compContainer.innerHTML = '';
-        if(!data) {
-            const msg = '<p style="text-align:center;padding:20px;">لا توجد طلبات</p>';
-            pendContainer.innerHTML = msg; compContainer.innerHTML = msg;
-            ['pending','preparing','delivering','completed'].forEach(s => document.getElementById(`count-${s}`).innerText='0');
-            document.getElementById('stats-revenue').innerText='0 د.ع';
-            ['completed','preparing','delivering'].forEach(s => document.getElementById(`stats-${s}-count`).innerText='0 طلب');
-            document.getElementById('notification-sound').pause();
-            return;
-        }
-        let np=0, npr=0, nd=0, nc=0, rev=0;
-        const orders = Object.entries(data).reverse();
-        const deliveringByDriver = {};
-        orders.forEach(([id, o]) => {
-            const st = o.status || 'pending';
-            if(st === 'preparing') {
-                npr++;
-                const shortId = id.substring(0,6);
-                let itemsHtml = ''; if(o.items) o.items.forEach(i => itemsHtml += `<span class="item-qty">${i.quantity||1}×</span> ${i.name}<br>`);
-                prepTbody.innerHTML += `<tr><td>${shortId}</td><td>${o.clientName}</td><td><a href="tel:${o.clientPhone}">${o.clientPhone}</a></td><td>${o.clientAddress||'-'}</td><td class="order-items-cell">${itemsHtml}</td><td>${o.clientNote?'<span class="note-cell">'+o.clientNote+'</span>':'-'}</td><td class="driver-cell">${o.driverName||'غير محدد'}</td><td>${o.total} د.ع</td><td><span class="badge-preparing">⏳ قيد التجهيز</span></td><td><button class="mini-btn btn-purple" onclick="updateOrderStatus('${id}','delivering')">🚚 بدء التوصيل</button></td></tr>`;
-            } else if(st === 'delivering') {
-                nd++;
-                if(!deliveringByDriver[o.driverId || 'unknown']) deliveringByDriver[o.driverId || 'unknown'] = { driverName: o.driverName || 'بدون اسم', orders: [] };
-                deliveringByDriver[o.driverId || 'unknown'].orders.push({ id, ...o });
-            } else if(st === 'pending') {
-                np++;
-                let items = ''; if(o.items) o.items.forEach(i => items += `<div class="item-row"><span><strong>${i.quantity||1}×</strong> ${i.name}</span></div>`);
-                pendContainer.innerHTML += `<div class="order-card status-pending"><span class="status-label lbl-pending">📥 طلب جديد</span><div class="order-info" style="margin-top:15px;"><p>👤 ${o.clientName}</p><p>📞 <a href="tel:${o.clientPhone}">${o.clientPhone}</a></p><p>📍 ${o.clientAddress||'غير محدد'}</p><div class="order-items-list">${items}${o.clientNote?`<div class="order-note-box">💡 ${o.clientNote}</div>`:''}</div></div><div class="order-total-price">💰 ${o.total} د.ع</div><button class="btn-info" onclick="updateOrderStatus('${id}','preparing')">قبول وبدء التجهيز</button></div>`;
-            } else if(st === 'completed') {
-                nc++;
-                rev += parseInt(convertArabicNumbers(o.total?.toString()||'0')) || 0;
-                let items = ''; if(o.items) o.items.forEach(i => items += `<div class="item-row"><span><strong>${i.quantity||1}×</strong> ${i.name}</span></div>`);
-                compContainer.innerHTML += `<div class="order-card status-completed"><span class="status-label lbl-completed">✅ جاهز</span><div class="order-info" style="margin-top:15px;"><p>👤 ${o.clientName}</p><p>📞 ${o.clientPhone}</p><p>📍 ${o.clientAddress||'غير محدد'}</p><div class="order-items-list">${items}</div></div><div class="order-total-price">💰 ${o.total} د.ع</div><button class="btn-danger" onclick="deleteOrderImmediate('${id}')">🗑️ أرشفة ومسح</button></div>`;
-            }
-        });
-        for(let driverId in deliveringByDriver) {
-            const group = deliveringByDriver[driverId];
-            let cardsHtml = '';
-            group.orders.forEach(order => {
-                const progress = order.deliveryProgress || 0;
-                cardsHtml += `<div class="delivery-card" onclick="showOrderDetail('${order.id}')"><div class="order-id">#${order.id.substring(0,6)}</div><div class="customer">👤 ${order.clientName}</div><div class="total">💰 ${order.total} د.ع</div><div class="progress-bar-container"><div class="progress-bar-fill" style="width:${progress}%"></div></div><small style="color:var(--text-body); margin-top:5px;">${progress}% مكتمل</small></div>`;
-            });
-            delContainer.innerHTML += `<div class="driver-group"><div class="driver-group-header">🚚 ${group.driverName}</div><div class="driver-group-cards">${cardsHtml}</div></div>`;
-        }
-        document.getElementById('count-pending').innerText = np;
-        document.getElementById('count-preparing').innerText = npr;
-        document.getElementById('count-delivering').innerText = nd;
-        document.getElementById('count-completed').innerText = nc;
-        document.getElementById('stats-revenue').innerText = rev.toLocaleString() + ' د.ع';
-        document.getElementById('stats-completed-count').innerText = nc + ' طلب';
-        document.getElementById('stats-preparing-count').innerText = npr + ' طلب';
-        document.getElementById('stats-delivering-count').innerText = nd + ' طلب';
-        const snd = document.getElementById('notification-sound');
-        if(np > 0) snd.play().catch(()=>{});
-        else { snd.pause(); snd.currentTime = 0; }
-        if(np === 0) pendContainer.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد طلبات واردة</p>';
-        if(nc === 0) compContainer.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد طلبات مكتملة</p>';
-        if(nd === 0) delContainer.innerHTML = '<p style="text-align:center;padding:20px;">لا توجد طلبات قيد التوصيل</p>';
-    });
+    window.editExtra = async (id, oldName, oldPrice, oldImage) => {
+        const newName = prompt('اسم الإضافة الجديد:', oldName); if (newName === null) return;
+        const newPrice = prompt('السعر الجديد:', oldPrice); if (newPrice === null) return;
+        const newImage = prompt('رابط الصورة الجديد:', oldImage || ''); if (newImage === null) return;
+        const priceNum = parseFloat(convertArabicNumbers(newPrice));
+        if (isNaN(priceNum)) return alert('سعر غير صحيح');
+        await db.from('extras').update({ name: newName.trim(), price: priceNum, image_url: newImage.trim() || null }).eq('id', id);
+        loadExtrasForMeal(currentExtrasItemId);
+    };
+
+    // ===== REALTIME SUBSCRIPTIONS =====
+    db.channel('dashboard-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, loadOrders)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, loadOrders)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, loadDrivers)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, loadMenu)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, loadMenu)
+        .subscribe();
+
+    // ===== INITIAL LOAD =====
+    loadOrders();
+    loadDrivers();
+    loadMenu();
 </script>
 </body>
 </html>
