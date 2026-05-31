@@ -3,7 +3,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 export default function AdminLayout() {
   return (
-    <Tabs screenOptions={{ tabBarActiveTintColor: '#4f46e5', headerShown: false }}>
+    <Tabs screenOptions={{ tabBarActiveTintColor: '#2563eb', headerShown: false }}>
       <Tabs.Screen
         name="dashboard"
         options={{
@@ -14,7 +14,7 @@ export default function AdminLayout() {
       <Tabs.Screen
         name="menu"
         options={{
-          title: 'إدارة المنيو',
+          title: 'dasha',
           tabBarIcon: ({ color }) => <MaterialIcons name="restaurant-menu" size={24} color={color} />,
         }}
       />
