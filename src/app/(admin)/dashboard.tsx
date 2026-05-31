@@ -14,17 +14,16 @@ export default function AdminDashboardScreen() {
         <TouchableOpacity onPress={handleLogout} className="px-3 py-1 bg-red-100 rounded-lg">
           <Text className="text-red-600 font-bold">تسجيل الخروج</Text>
         </TouchableOpacity>
-        <Text className="text-xl font-bold text-[#4f46e5]">لوحة الإدارة الحية</Text>
+        <Text className="text-xl font-bold text-[#2563eb]">dasha</Text>
       </View>
 
       <ScrollView className="flex-1 p-4">
-        {/* Statistics */}
         <View className="flex-row flex-wrap justify-between mb-6">
           <View className="w-[48%] bg-white p-4 rounded-xl shadow-sm border-t-4 border-green-500 mb-4">
             <Text className="text-gray-500 text-xs font-bold text-right mb-1">المبيعات</Text>
             <Text className="text-xl font-bold text-gray-800 text-right">0 د.ع</Text>
           </View>
-          <View className="w-[48%] bg-white p-4 rounded-xl shadow-sm border-t-4 border-indigo-500 mb-4">
+          <View className="w-[48%] bg-white p-4 rounded-xl shadow-sm border-t-4 border-blue-500 mb-4">
             <Text className="text-gray-500 text-xs font-bold text-right mb-1">طلبات مكتملة</Text>
             <Text className="text-xl font-bold text-gray-800 text-right">0</Text>
           </View>
