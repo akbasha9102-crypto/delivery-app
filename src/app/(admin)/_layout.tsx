@@ -14,7 +14,7 @@ export default function AdminLayout() {
       <Tabs.Screen
         name="menu"
         options={{
-          title: 'dasha',
+          title: 'قائمة الطعام',
           tabBarIcon: ({ color }) => <MaterialIcons name="restaurant-menu" size={24} color={color} />,
         }}
       />
