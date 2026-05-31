@@ -1,5 +1,4 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 
@@ -14,7 +13,7 @@ export default function AdminDashboardScreen() {
         <TouchableOpacity onPress={handleLogout} className="px-3 py-1 bg-red-100 rounded-lg">
           <Text className="text-red-600 font-bold">تسجيل الخروج</Text>
         </TouchableOpacity>
-        <Text className="text-xl font-bold text-[#2563eb]">dasha</Text>
+        <Text className="text-xl font-bold text-orange-500">dasha</Text>
       </View>
 
       <ScrollView className="flex-1 p-4">
