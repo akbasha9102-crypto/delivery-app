@@ -77,12 +77,13 @@ export default function HomeScreen() {
       const [{ data: cats }, { data: meals }, { data: settings }] = await Promise.all([
         db.from('categories').select('*').order('name'),
         db.from('items').select('*'),
-        db.from('restaurant_settings').select('primary_color, restaurant_name').limit(1).maybeSingle(),
+        db.from('restaurant_settings').select('primary_color, restaurant_name').limit(1),
       ]);
       setCategories(cats || []);
       setItems(meals || []);
-      if (settings?.primary_color) setPrimaryColor(settings.primary_color);
-      if (settings?.restaurant_name) setRestaurantName(settings.restaurant_name);
+      const s = Array.isArray(settings) ? settings[0] : settings;
+      if (s?.primary_color) setPrimaryColor(s.primary_color);
+      if (s?.restaurant_name) setRestaurantName(s.restaurant_name);
       setLoading(false);
     }
     load();
