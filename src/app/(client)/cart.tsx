@@ -22,19 +22,7 @@ export default function CartScreen() {
     });
   }, []);
 
-  const handleConfirmOrder = async () => {
-    if (!name.trim() || !phone.trim()) {
-      Alert.alert('الرجاء إدخال الاسم ورقم الهاتف');
-      return;
-    }
-    if (phone.trim() !== phoneConfirm.trim()) {
-      Alert.alert('رقم الهاتف غير متطابق', 'تأكد من إدخال نفس الرقم في حقل التأكيد');
-      return;
-    }
-    if (items.length === 0) {
-      Alert.alert('السلة فارغة');
-      return;
-    }
+  const submitOrder = async () => {
     setLoading(true);
     try {
       await AsyncStorage.setItem(PHONE_STORAGE_KEY, phone.trim());
@@ -72,6 +60,29 @@ export default function CartScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleConfirmOrder = () => {
+    if (!name.trim() || !phone.trim()) {
+      Alert.alert('الرجاء إدخال الاسم ورقم الهاتف');
+      return;
+    }
+    if (phone.trim() !== phoneConfirm.trim()) {
+      Alert.alert('رقم الهاتف غير متطابق', 'تأكد من إدخال نفس الرقم في حقل التأكيد');
+      return;
+    }
+    if (items.length === 0) {
+      Alert.alert('السلة فارغة');
+      return;
+    }
+    Alert.alert(
+      'تأكيد رقم الهاتف',
+      `هل رقم هاتفك صحيح؟\n\n${phone.trim()}`,
+      [
+        { text: 'تعديل', style: 'cancel' },
+        { text: 'نعم، أرسل الطلب', onPress: submitOrder },
+      ]
+    );
   };
 
   return (
