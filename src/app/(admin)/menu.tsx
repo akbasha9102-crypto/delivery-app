@@ -102,7 +102,7 @@ export default function AdminMenuScreen() {
     });
     setNewExtraName('');
     setNewExtraPrice('');
-    await openEditExtras(item.id);
+    await refreshExtras(item.id);
   };
 
   const handleSaveEdit = async () => {
@@ -125,36 +125,34 @@ export default function AdminMenuScreen() {
     setSaving(false);
   };
 
-  const handleAddExtra = async () => {
-    if (!editingItem || !newExtraName.trim()) return;
-    setSavingExtra(true);
-    const price = parseFloat(newExtraPrice.replace(',', '.')) || 0;
+  const refreshExtras = async (itemId: string) => {
     const { data, error } = await supabase
-      .from('item_extras')
-      .insert({ item_id: editingItem.id, name: newExtraName.trim(), price })
-      .select()
-      .single();
-    if (error) {
-      Alert.alert('خطأ في حفظ الإضافة', error.message);
-    } else if (data) {
-      setExtras(prev => [...prev, data]);
-      setNewExtraName('');
-      setNewExtraPrice('');
-    } else {
-      Alert.alert('خطأ', 'لم يتم الحفظ، حاول مرة ثانية');
-    }
-    setSavingExtra(false);
-  };
-
-  const openEditExtras = async (itemId: string) => {
-    const { data, error } = await supabase.from('item_extras').select('*').eq('item_id', itemId).order('created_at');
+      .from('item_extras').select('*').eq('item_id', itemId).order('created_at');
     if (error) Alert.alert('خطأ في تحميل الإضافات', error.message);
     setExtras(data || []);
   };
 
+  const handleAddExtra = async () => {
+    if (!editingItem || !newExtraName.trim()) return;
+    setSavingExtra(true);
+    const price = parseFloat(newExtraPrice.replace(',', '.')) || 0;
+    const { error } = await supabase
+      .from('item_extras')
+      .insert({ item_id: editingItem.id, name: newExtraName.trim(), price });
+    if (error) {
+      Alert.alert('خطأ في حفظ الإضافة', error.message);
+    } else {
+      setNewExtraName('');
+      setNewExtraPrice('');
+      await refreshExtras(editingItem.id);
+    }
+    setSavingExtra(false);
+  };
+
   const handleDeleteExtra = async (id: string) => {
-    await supabase.from('item_extras').delete().eq('id', id);
-    setExtras(prev => prev.filter(e => e.id !== id));
+    const { error } = await supabase.from('item_extras').delete().eq('id', id);
+    if (error) Alert.alert('خطأ في الحذف', error.message);
+    else if (editingItem) await refreshExtras(editingItem.id);
   };
 
   const toggleAvailable = async (item: Item) => {
