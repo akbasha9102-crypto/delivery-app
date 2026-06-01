@@ -51,6 +51,13 @@ export default function AdminLayout() {
             tabBarIcon: ({ color }) => <MaterialIcons name="local-shipping" size={24} color={color} />,
           }}
         />
+        <Tabs.Screen
+          name="appearance"
+          options={{
+            title: 'المظهر',
+            tabBarIcon: ({ color }) => <MaterialIcons name="palette" size={24} color={color} />,
+          }}
+        />
       </Tabs>
     </View>
   );
