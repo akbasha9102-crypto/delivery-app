@@ -37,6 +37,7 @@ export default function HomeScreen() {
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [phoneConfirm, setPhoneConfirm] = useState('');
   const [area, setArea] = useState('');
   const [locationDesc, setLocationDesc] = useState('');
   const [showAreaPicker, setShowAreaPicker] = useState(false);
@@ -77,7 +78,7 @@ export default function HomeScreen() {
       setLoading(false);
     }
     load();
-    AsyncStorage.getItem(PHONE_KEY).then(v => { if (v) setPhone(v); });
+    AsyncStorage.getItem(PHONE_KEY).then(v => { if (v) { setPhone(v); setPhoneConfirm(v); } });
   }, []);
 
   const filtered = activeCategory === 'all' ? items : items.filter(i => i.category_id === activeCategory);
@@ -117,6 +118,10 @@ export default function HomeScreen() {
   const handleSend = async () => {
     if (!name.trim() || !phone.trim()) {
       Alert.alert('الرجاء إدخال الاسم ورقم الهاتف');
+      return;
+    }
+    if (phone.trim() !== phoneConfirm.trim()) {
+      Alert.alert('رقم الهاتف غير متطابق', 'تأكد من إدخال نفس الرقم في حقل التأكيد');
       return;
     }
     if (!area) {
@@ -162,7 +167,7 @@ export default function HomeScreen() {
       setSelectedExtraIds(new Set());
       setAvailableExtras([]);
       clearCart();
-      setName(''); setArea(''); setLocationDesc(''); setNote('');
+      setName(''); setArea(''); setLocationDesc(''); setNote(''); setPhoneConfirm('');
       Alert.alert('✅ تم إرسال الطلب', 'سيتم التواصل معك قريباً');
     } catch {
       Alert.alert('حدث خطأ', 'تأكد من الاتصال بالإنترنت وحاول مرة أخرى');
@@ -476,6 +481,14 @@ export default function HomeScreen() {
               placeholderTextColor={dark ? '#64748b' : '#aaa'} keyboardType="phone-pad"
               style={{ borderWidth: 1, borderColor: c.panelBorder, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, textAlign: 'right', fontSize: 15, marginBottom: 12, backgroundColor: c.input, color: c.text }}
             />
+            <TextInput
+              value={phoneConfirm} onChangeText={setPhoneConfirm} placeholder="تأكيد رقم الهاتف *"
+              placeholderTextColor={dark ? '#64748b' : '#aaa'} keyboardType="phone-pad"
+              style={{ borderWidth: 1, borderColor: phoneConfirm && phone !== phoneConfirm ? '#f87171' : c.panelBorder, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, textAlign: 'right', fontSize: 15, marginBottom: phoneConfirm && phone !== phoneConfirm ? 4 : 12, backgroundColor: phoneConfirm && phone !== phoneConfirm ? (dark ? '#2d1010' : '#fff5f5') : c.input, color: c.text }}
+            />
+            {phoneConfirm.length > 0 && phone !== phoneConfirm && (
+              <Text style={{ color: '#f87171', textAlign: 'right', fontSize: 12, marginBottom: 12 }}>الرقم غير متطابق</Text>
+            )}
             {/* Area Dropdown */}
             <Pressable
               onPress={() => setShowAreaPicker(p => !p)}
