@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { Alert, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { useCart } from '../../context/CartContext';
@@ -11,18 +11,19 @@ export default function CartScreen() {
   const { items, removeItem, clearCart, total } = useCart();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [phoneConfirm, setPhoneConfirm] = useState('');
   const [address, setAddress] = useState('');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(PHONE_STORAGE_KEY).then(v => {
-      if (v) { setPhone(v); setPhoneConfirm(v); }
+      if (v) setPhone(v);
     });
   }, []);
 
   const submitOrder = async () => {
+    setShowModal(false);
     setLoading(true);
     try {
       await AsyncStorage.setItem(PHONE_STORAGE_KEY, phone.trim());
@@ -54,7 +55,7 @@ export default function CartScreen() {
 
       Alert.alert('✅ تم إرسال الطلب', 'سيتم التواصل معك قريباً');
       clearCart();
-      setName(''); setAddress(''); setNote(''); setPhoneConfirm('');
+      setName(''); setAddress(''); setNote('');
     } catch {
       Alert.alert('حدث خطأ', 'تأكد من الاتصال بالإنترنت وحاول مرة أخرى');
     } finally {
@@ -67,32 +68,49 @@ export default function CartScreen() {
       Alert.alert('الرجاء إدخال الاسم ورقم الهاتف');
       return;
     }
-    if (phone.trim() !== phoneConfirm.trim()) {
-      Alert.alert('رقم الهاتف غير متطابق', 'تأكد من إدخال نفس الرقم في حقل التأكيد');
-      return;
-    }
     if (items.length === 0) {
       Alert.alert('السلة فارغة');
       return;
     }
-    if (Platform.OS === 'web') {
-      if (window.confirm(`هل رقم هاتفك صحيح؟\n\n${phone.trim()}`)) {
-        submitOrder();
-      }
-    } else {
-      Alert.alert(
-        'تأكيد رقم الهاتف',
-        `هل رقم هاتفك صحيح؟\n\n${phone.trim()}`,
-        [
-          { text: 'تعديل', style: 'cancel' },
-          { text: 'نعم، أرسل الطلب', onPress: submitOrder },
-        ]
-      );
-    }
+    setShowModal(true);
   };
 
   return (
     <SafeAreaView className="flex-1 bg-background">
+      {/* Confirmation Modal */}
+      <Modal
+        visible={showModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowModal(false)}
+      >
+        <View className="flex-1 justify-center items-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View className="bg-white rounded-2xl mx-6 p-6 w-full max-w-sm shadow-xl">
+            <Text className="text-xl font-bold text-center text-[#944a00] mb-2">تأكيد رقم الهاتف</Text>
+            <Text className="text-center text-gray-500 mb-5">تأكد أن رقم هاتفك صحيح قبل إرسال الطلب</Text>
+
+            <View className="bg-orange-50 border border-[#e67e22] rounded-xl px-4 py-4 mb-6 items-center">
+              <Text className="text-sm text-gray-500 mb-1">رقم هاتفك</Text>
+              <Text className="text-2xl font-bold text-[#e67e22] tracking-widest">{phone.trim()}</Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={submitOrder}
+              className="bg-[#e67e22] py-3 rounded-xl items-center mb-3"
+            >
+              <Text className="text-white font-bold text-lg">نعم، الرقم صحيح — أرسل الطلب</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setShowModal(false)}
+              className="py-3 rounded-xl items-center border border-gray-200"
+            >
+              <Text className="text-gray-600 font-semibold">تعديل الرقم</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <View className="flex-row justify-between items-center p-4 bg-white shadow-sm z-10 border-b border-gray-100">
         <Text className="text-xl font-bold text-[#944a00]">سلة المشتريات</Text>
       </View>
@@ -134,18 +152,6 @@ export default function CartScreen() {
             className="border border-gray-200 rounded-xl px-4 py-3 text-right mb-3"
           />
           <TextInput
-            value={phoneConfirm}
-            onChangeText={setPhoneConfirm}
-            placeholder="تأكيد رقم الهاتف"
-            keyboardType="phone-pad"
-            className={`border rounded-xl px-4 py-3 text-right mb-3 ${
-              phoneConfirm && phone !== phoneConfirm ? 'border-red-400 bg-red-50' : 'border-gray-200'
-            }`}
-          />
-          {phoneConfirm.length > 0 && phone !== phoneConfirm && (
-            <Text className="text-red-500 text-right text-sm -mt-2 mb-3">الرقم غير متطابق</Text>
-          )}
-          <TextInput
             value={address}
             onChangeText={setAddress}
             placeholder="العنوان"
@@ -169,7 +175,7 @@ export default function CartScreen() {
         <TouchableOpacity
           onPress={handleConfirmOrder}
           disabled={loading}
-          className={`w-full py-4 rounded-xl items-center mt-6 ${loading ? 'bg-gray-400' : 'bg-[#e67e22]'}`}
+          className={`w-full py-4 rounded-xl items-center mt-6 mb-6 ${loading ? 'bg-gray-400' : 'bg-[#e67e22]'}`}
         >
           <Text className="text-white font-bold text-lg">
             {loading ? 'جاري الإرسال...' : 'تأكيد الطلب'}
