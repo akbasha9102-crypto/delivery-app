@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import { View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useDarkMode } from '@/context/ThemeContext';
 import { AnimatedTabBarButton } from '@/components/animated-tab-bar-button';
@@ -10,9 +11,10 @@ export default function ClientLayout() {
   const borderColor = dark ? '#2a2a2a' : '#e5e7eb';
   const inactiveColor = dark ? '#888888' : '#8e8e93';
 
-  if (!loaded) return null;
+  if (!loaded) return <View style={{ flex: 1, backgroundColor: dark ? '#0f172a' : '#fafafa' }} />;
 
   return (
+    <View style={{ flex: 1, backgroundColor: dark ? '#0f172a' : '#fafafa' }}>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#944a00',
@@ -49,5 +51,6 @@ export default function ClientLayout() {
         }}
       />
     </Tabs>
+    </View>
   );
 }
