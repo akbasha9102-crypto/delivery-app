@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { createClient } from '@supabase/supabase-js';
 import { useDarkMode } from '@/context/ThemeContext';
 import { StaggerItem } from '@/components/stagger-item';
+import { OrderStatusIllustration } from '@/components/order-status-illustration';
 
 const db = createClient(
   'https://gbmwrvnmvobvieembxmf.supabase.co',
@@ -178,62 +179,49 @@ export default function TrackScreen() {
           </View>
         ) : order ? (
           <>
-            {/* Progress card */}
+            {/* Status card with animated illustration */}
             <StaggerItem index={1}>
-            <View style={{ backgroundColor: c.card, borderRadius: 20, padding: 22, marginBottom: 14, shadowColor: '#000', shadowOpacity: dark ? 0.3 : 0.06, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: c.cardBorder }}>
-              <Text style={{ fontSize: 15, fontWeight: 'bold', color: c.text, textAlign: 'right', marginBottom: 28 }}>حالة الطلب</Text>
+            <View style={{ backgroundColor: c.card, borderRadius: 24, paddingTop: 22, paddingBottom: 20, paddingHorizontal: 18, marginBottom: 14, shadowColor: '#000', shadowOpacity: dark ? 0.3 : 0.07, shadowRadius: 10, elevation: 3, borderWidth: 1, borderColor: c.cardBorder }}>
+              <Text style={{ fontSize: 15, fontWeight: 'bold', color: c.text, textAlign: 'right', marginBottom: 18 }}>حالة الطلب</Text>
 
-              {/* Circles row */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+              {/* Big animated illustration */}
+              <View style={{ alignItems: 'center', marginBottom: 16 }}>
+                <OrderStatusIllustration status={order.status} dark={dark} />
+              </View>
+
+              {/* Status label + description */}
+              <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#e67e22', marginBottom: 4 }}>{STEPS[current]?.label}</Text>
+                <Text style={{ fontSize: 13, color: c.subtext, textAlign: 'center' }}>{STEPS[current]?.desc}</Text>
+              </View>
+
+              {/* Step dots row */}
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 {STEPS.map((step, idx) => {
-                  const done = idx <= current;
+                  const done   = idx <= current;
                   const active = idx === current;
                   return (
                     <React.Fragment key={step.key}>
                       <View style={{ alignItems: 'center' }}>
                         <View style={{
-                          width: 46, height: 46, borderRadius: 23,
+                          width: active ? 14 : 10,
+                          height: active ? 14 : 10,
+                          borderRadius: active ? 7 : 5,
                           backgroundColor: done ? '#e67e22' : c.stepEmpty,
-                          alignItems: 'center', justifyContent: 'center',
-                          borderWidth: active ? 3 : 0,
-                          borderColor: active ? '#944a00' : 'transparent',
-                          shadowColor: '#e67e22',
-                          shadowOpacity: done ? 0.35 : 0,
-                          shadowRadius: 6, elevation: done ? 4 : 0,
-                        }}>
-                          <Text style={{ fontSize: 18 }}>{step.icon}</Text>
-                        </View>
+                          borderWidth: active ? 2 : 0,
+                          borderColor: '#944a00',
+                        }} />
+                        <Text style={{ fontSize: 9, color: done ? '#e67e22' : c.subtext, marginTop: 4, fontWeight: active ? 'bold' : 'normal', textAlign: 'center', width: 44 }}>
+                          {step.label}
+                        </Text>
                       </View>
                       {idx < STEPS.length - 1 && (
-                        <View style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: idx < current ? '#e67e22' : c.stepEmpty, marginHorizontal: 2 }} />
+                        <View style={{ flex: 1, height: 3, borderRadius: 1.5, backgroundColor: idx < current ? '#e67e22' : c.stepEmpty, marginHorizontal: 3, marginBottom: 14 }} />
                       )}
                     </React.Fragment>
                   );
                 })}
               </View>
-
-              {/* Labels row */}
-              <View style={{ flexDirection: 'row' }}>
-                {STEPS.map((step, idx) => (
-                  <React.Fragment key={step.key}>
-                    <View style={{ alignItems: 'center', width: 46 }}>
-                      <Text style={{ fontSize: 10, fontWeight: idx === current ? 'bold' : 'normal', color: idx <= current ? '#e67e22' : c.subtext, textAlign: 'center' }}>
-                        {step.label}
-                      </Text>
-                    </View>
-                    {idx < STEPS.length - 1 && <View style={{ flex: 1 }} />}
-                  </React.Fragment>
-                ))}
-              </View>
-            </View>
-            </StaggerItem>
-
-            {/* Status message */}
-            <StaggerItem index={2}>
-            <View style={{ backgroundColor: c.statusCard, borderRadius: 16, paddingVertical: 18, paddingHorizontal: 20, marginBottom: 14, borderWidth: 1.5, borderColor: '#e67e22', alignItems: 'center' }}>
-              <Text style={{ fontSize: 30, marginBottom: 6 }}>{STEPS[current]?.icon}</Text>
-              <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#e67e22', marginBottom: 4 }}>{STEPS[current]?.label}</Text>
-              <Text style={{ fontSize: 13, color: c.subtext }}>{STEPS[current]?.desc}</Text>
             </View>
             </StaggerItem>
 
