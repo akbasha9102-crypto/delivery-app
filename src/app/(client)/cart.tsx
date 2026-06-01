@@ -66,7 +66,8 @@ export default function CartScreen() {
         price: i.price,
       }));
 
-      await supabase.from('order_items').insert(orderItemsData);
+      const { error: itemsError } = await supabase.from('order_items').insert(orderItemsData);
+      if (itemsError) throw itemsError;
 
       Alert.alert('✅ تم إرسال الطلب', 'سيتم التواصل معك قريباً');
       clearCart();

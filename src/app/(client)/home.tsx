@@ -152,7 +152,7 @@ export default function HomeScreen() {
 
       await AsyncStorage.setItem(ORDER_ID_KEY, order.id);
 
-      await db.from('order_items').insert(
+      const { error: itemsError } = await db.from('order_items').insert(
         cartItems.map(i => {
           const itemExtras = availableExtras
             .filter(e => e.item_id === i.id && selectedExtraIds.has(e.id))
@@ -160,13 +160,14 @@ export default function HomeScreen() {
           return {
             order_id: order.id,
             item_id: i.id,
-            item_name: i.name,
+            item_name: itemExtras ? `${i.name} (${itemExtras})` : i.name,
             quantity: i.quantity,
             price: i.price,
-            extras: itemExtras || null,
           };
         })
       );
+
+      if (itemsError) throw itemsError;
 
       setShowModal(false);
       setShowExtrasModal(false);
