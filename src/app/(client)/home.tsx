@@ -30,9 +30,18 @@ export default function HomeScreen() {
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
+  const [area, setArea] = useState('');
+  const [locationDesc, setLocationDesc] = useState('');
+  const [showAreaPicker, setShowAreaPicker] = useState(false);
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
+
+  const BASRA_AREAS = [
+    'العشار', 'المعقل', 'أبو الخصيب', 'الزبير', 'القرنة', 'الهارثة',
+    'البصرة القديمة', 'الجزائر', 'الأصمعي', 'البريهة', 'المدينة',
+    'كرمة علي', 'الدير', 'التنومة', 'السيبة', 'الفاو',
+    'خور الزبير', 'أم قصر', 'الشعيبة', 'شط العرب', 'الجنينة',
+  ];
 
   const panelAnim = useRef(new Animated.Value(0)).current;
   const prevLen = useRef(0);
@@ -67,6 +76,10 @@ export default function HomeScreen() {
       Alert.alert('الرجاء إدخال الاسم ورقم الهاتف');
       return;
     }
+    if (!area) {
+      Alert.alert('الرجاء اختيار منطقتك');
+      return;
+    }
     setSending(true);
     try {
       await AsyncStorage.setItem(PHONE_KEY, phone.trim());
@@ -75,7 +88,7 @@ export default function HomeScreen() {
         .insert({
           client_name: name.trim(),
           client_phone: phone.trim(),
-          delivery_address: address.trim() || null,
+          delivery_address: area + (locationDesc.trim() ? ' - ' + locationDesc.trim() : ''),
           client_note: note.trim() || null,
           total_amount: total,
           status: 'pending',
@@ -97,7 +110,7 @@ export default function HomeScreen() {
 
       setShowModal(false);
       clearCart();
-      setName(''); setAddress(''); setNote('');
+      setName(''); setArea(''); setLocationDesc(''); setNote('');
       Alert.alert('✅ تم إرسال الطلب', 'سيتم التواصل معك قريباً');
     } catch {
       Alert.alert('حدث خطأ', 'تأكد من الاتصال بالإنترنت وحاول مرة أخرى');
@@ -303,8 +316,49 @@ export default function HomeScreen() {
               placeholderTextColor={dark ? '#64748b' : '#aaa'} keyboardType="phone-pad"
               style={{ borderWidth: 1, borderColor: c.panelBorder, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, textAlign: 'right', fontSize: 15, marginBottom: 12, backgroundColor: c.input, color: c.text }}
             />
+            {/* Area Dropdown */}
+            <Pressable
+              onPress={() => setShowAreaPicker(p => !p)}
+              style={({ pressed }) => ({
+                borderWidth: 1, borderColor: area ? '#e67e22' : c.panelBorder,
+                borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13,
+                backgroundColor: c.input, marginBottom: showAreaPicker ? 0 : 12,
+                flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              })}
+            >
+              <Text style={{ fontSize: 16, color: dark ? '#94a3b8' : '#aaa' }}>{showAreaPicker ? '▲' : '▼'}</Text>
+              <Text style={{ fontSize: 15, color: area ? c.text : (dark ? '#64748b' : '#aaa'), textAlign: 'right' }}>
+                {area || 'اختر منطقتك في البصرة *'}
+              </Text>
+            </Pressable>
+
+            {showAreaPicker && (
+              <View style={{ borderWidth: 1, borderTopWidth: 0, borderColor: '#e67e22', borderBottomLeftRadius: 12, borderBottomRightRadius: 12, backgroundColor: c.input, marginBottom: 12, maxHeight: 200, overflow: 'hidden' }}>
+                <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
+                  {BASRA_AREAS.map((a, idx) => (
+                    <Pressable
+                      key={a}
+                      onPress={() => { setArea(a); setShowAreaPicker(false); }}
+                      style={({ pressed }) => ({
+                        paddingHorizontal: 16, paddingVertical: 12,
+                        backgroundColor: area === a ? (dark ? '#1c3a2a' : '#fff7ed') : (pressed ? (dark ? '#334155' : '#f8fafc') : 'transparent'),
+                        borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: c.panelBorder,
+                        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                      })}
+                    >
+                      {area === a && <Text style={{ color: '#e67e22', fontSize: 16 }}>✓</Text>}
+                      <Text style={{ color: area === a ? '#e67e22' : c.text, fontWeight: area === a ? 'bold' : 'normal', fontSize: 14, textAlign: 'right', flex: 1 }}>{a}</Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Location Description */}
             <TextInput
-              value={address} onChangeText={setAddress} placeholder="العنوان"
+              value={locationDesc} onChangeText={setLocationDesc}
+              placeholder="وصف الموقع (مثال: بجانب المدرسة، شارع...)"
               placeholderTextColor={dark ? '#64748b' : '#aaa'}
               style={{ borderWidth: 1, borderColor: c.panelBorder, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, textAlign: 'right', fontSize: 15, marginBottom: 12, backgroundColor: c.input, color: c.text }}
             />
