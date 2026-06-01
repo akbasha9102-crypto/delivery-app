@@ -31,6 +31,7 @@ export default function HomeScreen() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [primaryColor, setPrimaryColor] = useState('#e67e22');
+  const [restaurantName, setRestaurantName] = useState('CulinaShare');
   const { items: cartItems, addItem, decrementItem, removeItem, clearCart, total } = useCart();
 
   const [showExtrasModal, setShowExtrasModal] = useState(false);
@@ -76,15 +77,26 @@ export default function HomeScreen() {
       const [{ data: cats }, { data: meals }, { data: settings }] = await Promise.all([
         db.from('categories').select('*').order('name'),
         db.from('items').select('*'),
-        db.from('restaurant_settings').select('primary_color').limit(1).maybeSingle(),
+        db.from('restaurant_settings').select('primary_color, restaurant_name').limit(1).maybeSingle(),
       ]);
       setCategories(cats || []);
       setItems(meals || []);
       if (settings?.primary_color) setPrimaryColor(settings.primary_color);
+      if (settings?.restaurant_name) setRestaurantName(settings.restaurant_name);
       setLoading(false);
     }
     load();
     AsyncStorage.getItem(PHONE_KEY).then(v => { if (v) setPhone(v); });
+
+    const channel = db
+      .channel('restaurant_settings_changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'restaurant_settings' }, payload => {
+        if (payload.new.primary_color) setPrimaryColor(payload.new.primary_color);
+        if (payload.new.restaurant_name) setRestaurantName(payload.new.restaurant_name);
+      })
+      .subscribe();
+
+    return () => { db.removeChannel(channel); };
   }, []);
 
   const filtered = activeCategory === 'all' ? items : items.filter(i => i.category_id === activeCategory);
@@ -237,7 +249,7 @@ export default function HomeScreen() {
           )}
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#944a00' }}>CulinaShare</Text>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: primaryColor }}>{restaurantName}</Text>
           <Pressable
             onPress={() => router.back()}
             style={({ pressed }) => ({
