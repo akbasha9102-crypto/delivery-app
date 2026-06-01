@@ -29,6 +29,11 @@ export default function HomeScreen() {
   const [dark, setDark] = useState(false);
   const { items: cartItems, addItem, decrementItem, removeItem, clearCart, total } = useCart();
 
+  const [showExtrasModal, setShowExtrasModal] = useState(false);
+  const [availableExtras, setAvailableExtras] = useState<{ id: string; item_id: string; name: string; price: number; item_name: string }[]>([]);
+  const [selectedExtraIds, setSelectedExtraIds] = useState<Set<string>>(new Set());
+  const [loadingExtras, setLoadingExtras] = useState(false);
+
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -37,6 +42,10 @@ export default function HomeScreen() {
   const [showAreaPicker, setShowAreaPicker] = useState(false);
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
+
+  const extrasTotal = availableExtras
+    .filter(e => selectedExtraIds.has(e.id))
+    .reduce((sum, e) => sum + e.price, 0);
 
   const BASRA_AREAS = [
     'العشار', 'المعقل', 'أبو الخصيب', 'الزبير', 'القرنة', 'الهارثة',
@@ -73,6 +82,36 @@ export default function HomeScreen() {
 
   const filtered = activeCategory === 'all' ? items : items.filter(i => i.category_id === activeCategory);
 
+  const handleConfirmCart = async () => {
+    setLoadingExtras(true);
+    try {
+      const itemIds = cartItems.map(i => i.id);
+      const { data } = await db.from('item_extras').select('*').in('item_id', itemIds);
+      if (data && data.length > 0) {
+        setAvailableExtras(data.map(e => ({
+          ...e,
+          item_name: cartItems.find(i => i.id === e.item_id)?.name || '',
+        })));
+        setSelectedExtraIds(new Set());
+        setShowExtrasModal(true);
+      } else {
+        setShowModal(true);
+      }
+    } catch {
+      setShowModal(true);
+    } finally {
+      setLoadingExtras(false);
+    }
+  };
+
+  const toggleExtra = (id: string) => {
+    setSelectedExtraIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
   const handleSend = async () => {
     if (!name.trim() || !phone.trim()) {
       Alert.alert('الرجاء إدخال الاسم ورقم الهاتف');
@@ -92,7 +131,7 @@ export default function HomeScreen() {
           client_phone: phone.trim(),
           delivery_address: area + (locationDesc.trim() ? ' - ' + locationDesc.trim() : ''),
           client_note: note.trim() || null,
-          total_amount: total,
+          total_amount: total + extrasTotal,
           status: 'pending',
         })
         .select()
@@ -101,16 +140,25 @@ export default function HomeScreen() {
       if (error || !order) throw error;
 
       await db.from('order_items').insert(
-        cartItems.map(i => ({
-          order_id: order.id,
-          item_id: i.id,
-          item_name: i.name,
-          quantity: i.quantity,
-          price: i.price,
-        }))
+        cartItems.map(i => {
+          const itemExtras = availableExtras
+            .filter(e => e.item_id === i.id && selectedExtraIds.has(e.id))
+            .map(e => e.name).join('، ');
+          return {
+            order_id: order.id,
+            item_id: i.id,
+            item_name: i.name,
+            quantity: i.quantity,
+            price: i.price,
+            extras: itemExtras || null,
+          };
+        })
       );
 
       setShowModal(false);
+      setShowExtrasModal(false);
+      setSelectedExtraIds(new Set());
+      setAvailableExtras([]);
       clearCart();
       setName(''); setArea(''); setLocationDesc(''); setNote('');
       Alert.alert('✅ تم إرسال الطلب', 'سيتم التواصل معك قريباً');
@@ -300,10 +348,11 @@ export default function HomeScreen() {
 
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: c.panelBorder, paddingTop: 12, marginTop: 6 }}>
           <Pressable
-            onPress={() => setShowModal(true)}
-            style={({ pressed }) => ({ backgroundColor: '#e67e22', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14, transform: [{ scale: pressed ? 0.96 : 1 }] })}
+            onPress={handleConfirmCart}
+            disabled={loadingExtras}
+            style={({ pressed }) => ({ backgroundColor: '#e67e22', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14, transform: [{ scale: pressed ? 0.96 : 1 }], opacity: loadingExtras ? 0.7 : 1 })}
           >
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 15 }}>تاكيد الطلب</Text>
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 15 }}>{loadingExtras ? '...' : 'تاكيد الطلب'}</Text>
           </Pressable>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={{ fontSize: 12, color: c.subtext }}>الإجمالي</Text>
@@ -311,6 +360,88 @@ export default function HomeScreen() {
           </View>
         </View>
       </Animated.View>
+
+      {/* Extras Selection Modal */}
+      <Modal visible={showExtrasModal} transparent animationType="slide" onRequestClose={() => setShowExtrasModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }} activeOpacity={1} onPress={() => setShowExtrasModal(false)} />
+          <View style={{ backgroundColor: c.panel, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 32, maxHeight: '75%' }}>
+            <View style={{ width: 44, height: 4, backgroundColor: c.catBorder, borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
+
+            {/* Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <Text style={{ color: c.subtext, fontSize: 13 }}>اختياري</Text>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: c.text }}>أضف للطلب 🧂</Text>
+            </View>
+            <Text style={{ color: c.subtext, fontSize: 13, textAlign: 'right', marginBottom: 16 }}>اختر الإضافات التي تريدها مع طلبك</Text>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ marginBottom: 16 }}>
+              {/* Group by item */}
+              {cartItems.map(cartItem => {
+                const itemExtras = availableExtras.filter(e => e.item_id === cartItem.id);
+                if (itemExtras.length === 0) return null;
+                return (
+                  <View key={cartItem.id} style={{ marginBottom: 16 }}>
+                    <Text style={{ color: '#e67e22', fontWeight: 'bold', textAlign: 'right', fontSize: 14, marginBottom: 8 }}>
+                      {cartItem.name}
+                    </Text>
+                    {itemExtras.map(extra => {
+                      const selected = selectedExtraIds.has(extra.id);
+                      return (
+                        <Pressable
+                          key={extra.id}
+                          onPress={() => toggleExtra(extra.id)}
+                          style={({ pressed }) => ({
+                            flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                            backgroundColor: selected ? (dark ? '#1c3a2a' : '#fff7ed') : (dark ? '#0f172a' : '#f8fafc'),
+                            borderWidth: 1.5, borderColor: selected ? '#e67e22' : c.panelBorder,
+                            borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12,
+                            marginBottom: 8, transform: [{ scale: pressed ? 0.97 : 1 }],
+                          })}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: selected ? '#e67e22' : c.subtext, backgroundColor: selected ? '#e67e22' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                              {selected && <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold' }}>✓</Text>}
+                            </View>
+                            {extra.price > 0
+                              ? <Text style={{ color: '#e67e22', fontWeight: 'bold', fontSize: 13 }}>+{extra.price.toLocaleString()} د.ع</Text>
+                              : <Text style={{ color: c.subtext, fontSize: 13 }}>مجاني</Text>
+                            }
+                          </View>
+                          <Text style={{ color: c.text, fontWeight: selected ? 'bold' : 'normal', fontSize: 15, textAlign: 'right' }}>{extra.name}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                );
+              })}
+            </ScrollView>
+
+            {/* Extras total + buttons */}
+            {extrasTotal > 0 && (
+              <View style={{ backgroundColor: c.qtyBg, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ color: '#e67e22', fontWeight: 'bold' }}>{extrasTotal.toLocaleString()} د.ع</Text>
+                <Text style={{ color: c.text, fontWeight: 'bold' }}>تكلفة الإضافات</Text>
+              </View>
+            )}
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Pressable
+                onPress={() => { setShowExtrasModal(false); setShowModal(true); }}
+                style={({ pressed }) => ({ flex: 1, backgroundColor: dark ? '#334155' : '#f1f5f9', paddingVertical: 14, borderRadius: 14, alignItems: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] })}
+              >
+                <Text style={{ color: c.subtext, fontWeight: 'bold', fontSize: 15 }}>تخطي</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => { setShowExtrasModal(false); setShowModal(true); }}
+                style={({ pressed }) => ({ flex: 2, backgroundColor: '#e67e22', paddingVertical: 14, borderRadius: 14, alignItems: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] })}
+              >
+                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 15 }}>متابعة ←</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Order Info Modal */}
       <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
@@ -401,7 +532,12 @@ export default function HomeScreen() {
               {cartItems.map(i => (
                 <Text key={i.id} style={{ textAlign: 'right', color: c.subtext, fontSize: 13, marginBottom: 2 }}>{i.quantity}× {i.name}</Text>
               ))}
-              <Text style={{ textAlign: 'right', fontWeight: 'bold', color: '#e67e22', marginTop: 6, fontSize: 15 }}>الإجمالي: {total.toLocaleString()} د.ع</Text>
+              {extrasTotal > 0 && (
+                <Text style={{ textAlign: 'right', color: c.subtext, fontSize: 13, marginTop: 4 }}>
+                  إضافات: +{extrasTotal.toLocaleString()} د.ع
+                </Text>
+              )}
+              <Text style={{ textAlign: 'right', fontWeight: 'bold', color: '#e67e22', marginTop: 6, fontSize: 15 }}>الإجمالي: {(total + extrasTotal).toLocaleString()} د.ع</Text>
             </View>
 
             <Pressable

@@ -8,6 +8,7 @@ const DEFAULT_IMAGE = 'https://via.placeholder.com/300x200.png?text=Food';
 
 type Category = { id: string; name: string };
 type Item = { id: string; category_id: string; name: string; description: string; price: number; image_url: string; is_available: boolean };
+type Extra = { id: string; item_id: string; name: string; price: number };
 
 function InputField({ label, value, onChangeText, placeholder, keyboardType = 'default' }: any) {
   return (
@@ -37,6 +38,11 @@ export default function AdminMenuScreen() {
   const [newCategory, setNewCategory] = useState('');
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [editForm, setEditForm] = useState({ category_id: '', name: '', description: '', price: '', image_url: '' });
+
+  const [extras, setExtras] = useState<Extra[]>([]);
+  const [newExtraName, setNewExtraName] = useState('');
+  const [newExtraPrice, setNewExtraPrice] = useState('');
+  const [savingExtra, setSavingExtra] = useState(false);
 
   const fetchMenu = async () => {
     setLoading(true);
@@ -85,7 +91,7 @@ export default function AdminMenuScreen() {
     setSaving(false);
   };
 
-  const openEdit = (item: Item) => {
+  const openEdit = async (item: Item) => {
     setEditingItem(item);
     setEditForm({
       category_id: item.category_id,
@@ -94,6 +100,10 @@ export default function AdminMenuScreen() {
       price: String(item.price),
       image_url: item.image_url || '',
     });
+    setNewExtraName('');
+    setNewExtraPrice('');
+    const { data } = await supabase.from('item_extras').select('*').eq('item_id', item.id).order('created_at');
+    setExtras(data || []);
   };
 
   const handleSaveEdit = async () => {
@@ -114,6 +124,28 @@ export default function AdminMenuScreen() {
     if (error) showMsg('تعذّر حفظ التعديل', false);
     else { await fetchMenu(); setEditingItem(null); showMsg('✓ تم حفظ التعديلات'); }
     setSaving(false);
+  };
+
+  const handleAddExtra = async () => {
+    if (!editingItem || !newExtraName.trim()) return;
+    setSavingExtra(true);
+    const price = parseFloat(newExtraPrice.replace(',', '.')) || 0;
+    const { data, error } = await supabase
+      .from('item_extras')
+      .insert({ item_id: editingItem.id, name: newExtraName.trim(), price })
+      .select()
+      .single();
+    if (!error && data) {
+      setExtras(prev => [...prev, data]);
+      setNewExtraName('');
+      setNewExtraPrice('');
+    }
+    setSavingExtra(false);
+  };
+
+  const handleDeleteExtra = async (id: string) => {
+    await supabase.from('item_extras').delete().eq('id', id);
+    setExtras(prev => prev.filter(e => e.id !== id));
   };
 
   const toggleAvailable = async (item: Item) => {
@@ -139,8 +171,9 @@ export default function AdminMenuScreen() {
       {/* Edit Modal */}
       <Modal visible={!!editingItem} animationType="slide" transparent>
         <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-gray-800 rounded-t-3xl p-6">
-            <View className="flex-row justify-between items-center mb-5">
+          <View className="bg-gray-800 rounded-t-3xl" style={{ maxHeight: '92%' }}>
+            {/* Header */}
+            <View className="flex-row justify-between items-center p-6 pb-4 border-b border-gray-700">
               <TouchableOpacity onPress={() => setEditingItem(null)} className="bg-gray-700 px-4 py-2 rounded-xl">
                 <Text className="text-gray-300 font-bold">إلغاء</Text>
               </TouchableOpacity>
@@ -150,23 +183,80 @@ export default function AdminMenuScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text className="text-gray-400 text-xs text-right mb-2">القسم</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4" style={{ flexDirection: 'row-reverse' }}>
-              {categories.map((cat) => (
-                <TouchableOpacity
-                  key={cat.id}
-                  onPress={() => setEditForm((p) => ({ ...p, category_id: cat.id }))}
-                  className={`px-4 py-2 rounded-full mr-2 border ${editForm.category_id === cat.id ? 'bg-orange-500 border-orange-500' : 'bg-gray-700 border-gray-600'}`}
-                >
-                  <Text className={`font-bold text-sm ${editForm.category_id === cat.id ? 'text-white' : 'text-gray-300'}`}>{cat.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <ScrollView className="px-6 pt-4" contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
+              {/* Category */}
+              <Text className="text-gray-400 text-xs text-right mb-2">القسم</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4" style={{ flexDirection: 'row-reverse' }}>
+                {categories.map((cat) => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    onPress={() => setEditForm((p) => ({ ...p, category_id: cat.id }))}
+                    className={`px-4 py-2 rounded-full mr-2 border ${editForm.category_id === cat.id ? 'bg-orange-500 border-orange-500' : 'bg-gray-700 border-gray-600'}`}
+                  >
+                    <Text className={`font-bold text-sm ${editForm.category_id === cat.id ? 'text-white' : 'text-gray-300'}`}>{cat.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
-            <InputField label="اسم الطبق" value={editForm.name} onChangeText={(v: string) => setEditForm((p) => ({ ...p, name: v }))} placeholder="اسم الطبق" />
-            <InputField label="الوصف" value={editForm.description} onChangeText={(v: string) => setEditForm((p) => ({ ...p, description: v }))} placeholder="وصف الطبق" />
-            <InputField label="السعر (د.ع)" value={editForm.price} onChangeText={(v: string) => setEditForm((p) => ({ ...p, price: v }))} placeholder="السعر" keyboardType="decimal-pad" />
-            <InputField label="رابط الصورة" value={editForm.image_url} onChangeText={(v: string) => setEditForm((p) => ({ ...p, image_url: v }))} placeholder="رابط الصورة (اختياري)" />
+              <InputField label="اسم الطبق" value={editForm.name} onChangeText={(v: string) => setEditForm((p) => ({ ...p, name: v }))} placeholder="اسم الطبق" />
+              <InputField label="الوصف" value={editForm.description} onChangeText={(v: string) => setEditForm((p) => ({ ...p, description: v }))} placeholder="وصف الطبق" />
+              <InputField label="السعر (د.ع)" value={editForm.price} onChangeText={(v: string) => setEditForm((p) => ({ ...p, price: v }))} placeholder="السعر" keyboardType="decimal-pad" />
+              <InputField label="رابط الصورة" value={editForm.image_url} onChangeText={(v: string) => setEditForm((p) => ({ ...p, image_url: v }))} placeholder="رابط الصورة (اختياري)" />
+
+              {/* ── Extras Section ── */}
+              <View className="mt-2 mb-3 border-t border-gray-700 pt-4">
+                <Text className="text-white font-bold text-right text-base mb-3">🧂 الإضافات المقترحة</Text>
+
+                {/* Current extras */}
+                {extras.length === 0 ? (
+                  <Text className="text-gray-500 text-right text-sm mb-3">لا توجد إضافات بعد</Text>
+                ) : (
+                  <View className="mb-3">
+                    {extras.map(e => (
+                      <View key={e.id} className="flex-row justify-between items-center bg-gray-900 rounded-xl px-4 py-3 mb-2 border border-gray-700">
+                        <TouchableOpacity onPress={() => handleDeleteExtra(e.id)} className="bg-red-500/20 px-3 py-1 rounded-lg border border-red-500/30">
+                          <Text className="text-red-400 text-xs font-bold">حذف</Text>
+                        </TouchableOpacity>
+                        <View className="items-end flex-1 mr-3">
+                          <Text className="text-white font-bold text-sm">{e.name}</Text>
+                          {e.price > 0 && <Text className="text-orange-400 text-xs mt-0.5">+{e.price.toLocaleString()} د.ع</Text>}
+                          {e.price === 0 && <Text className="text-gray-500 text-xs mt-0.5">مجاني</Text>}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Add new extra */}
+                <View className="bg-gray-900 rounded-xl p-3 border border-gray-700 border-dashed">
+                  <Text className="text-gray-400 text-xs text-right mb-2">إضافة جديدة</Text>
+                  <TextInput
+                    value={newExtraName}
+                    onChangeText={setNewExtraName}
+                    placeholder="اسم الإضافة (مثال: صوص، ببسي...)"
+                    placeholderTextColor="#6b7280"
+                    className="bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-right text-white mb-2"
+                  />
+                  <View className="flex-row gap-2">
+                    <TextInput
+                      value={newExtraPrice}
+                      onChangeText={setNewExtraPrice}
+                      placeholder="السعر (0 = مجاني)"
+                      placeholderTextColor="#6b7280"
+                      keyboardType="decimal-pad"
+                      className="bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-right text-white flex-1"
+                    />
+                    <TouchableOpacity
+                      onPress={handleAddExtra}
+                      disabled={savingExtra || !newExtraName.trim()}
+                      className={`px-5 rounded-xl items-center justify-center ${newExtraName.trim() ? 'bg-orange-500' : 'bg-gray-700'}`}
+                    >
+                      <Text className="text-white font-bold text-lg">{savingExtra ? '...' : '+'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -255,7 +345,6 @@ export default function AdminMenuScreen() {
                   catItems.map((item) => (
                     <View key={item.id} className={`rounded-2xl mb-3 border overflow-hidden ${item.is_available ? 'bg-gray-800 border-gray-700' : 'bg-gray-800/60 border-gray-700/50'}`}>
                       <View className="flex-row justify-between items-center p-4">
-                        {/* أزرار اليسار */}
                         <View className="flex-row gap-2">
                           <TouchableOpacity onPress={() => deleteItem(item.id)} className="bg-red-500/20 border border-red-500/30 px-3 py-1.5 rounded-lg">
                             <Text className="text-red-400 text-xs font-bold">حذف</Text>
@@ -264,16 +353,12 @@ export default function AdminMenuScreen() {
                             <Text className="text-blue-400 text-xs font-bold">✏️ تعديل</Text>
                           </TouchableOpacity>
                         </View>
-
-                        {/* معلومات الطبق - اليمين */}
                         <View className="items-end flex-1 mr-3">
                           <Text className={`font-bold text-base ${item.is_available ? 'text-white' : 'text-gray-500'}`}>{item.name}</Text>
                           {item.description ? <Text className="text-gray-400 text-xs mt-0.5 text-right" numberOfLines={1}>{item.description}</Text> : null}
                           <Text className={`font-bold mt-1 ${item.is_available ? 'text-orange-400' : 'text-gray-500'}`}>{item.price.toLocaleString()} د.ع</Text>
                         </View>
                       </View>
-
-                      {/* زر المتاح - كامل العرض */}
                       <TouchableOpacity
                         onPress={() => toggleAvailable(item)}
                         className={`mx-4 mb-4 py-2.5 rounded-xl items-center border ${item.is_available ? 'bg-green-500/10 border-green-500/30' : 'bg-gray-700 border-gray-600'}`}
