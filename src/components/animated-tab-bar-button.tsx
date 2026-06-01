@@ -6,9 +6,8 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
-type Props = React.ComponentProps<typeof Pressable>;
-
-export function AnimatedTabBarButton({ children, onPress, style, ...rest }: Props) {
+export function AnimatedTabBarButton(props: any) {
+  const { children, onPress, style, ...rest } = props;
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -25,9 +24,9 @@ export function AnimatedTabBarButton({ children, onPress, style, ...rest }: Prop
       onPressOut={() => {
         scale.value = withSpring(1, { damping: 10, stiffness: 300 });
       }}
-      style={[{ flex: 1, alignItems: 'center', justifyContent: 'center' }, style as any]}
+      style={[{ flex: 1, alignItems: 'center', justifyContent: 'center' }, style]}
     >
-      <Animated.View style={animatedStyle}>{children}</Animated.View>
+      <Animated.View style={animatedStyle}>{children as React.ReactNode}</Animated.View>
     </Pressable>
   );
 }

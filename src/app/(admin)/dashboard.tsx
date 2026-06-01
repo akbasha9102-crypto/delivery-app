@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
-import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, RefreshControl, Pressable } from 'react-native';
+import { ScrollView, Text, View, ActivityIndicator, RefreshControl, Pressable, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useDarkMode } from '../../context/ThemeContext';
+import { AnimatedButton } from '../../components/animated-button';
 
 type OrderItem = { id: string; item_name: string; quantity: number; price: number };
 type Order = {
@@ -128,23 +129,23 @@ export default function AdminDashboardScreen() {
           >
             <Text style={{ fontSize: 16 }}>{dark ? '☀️' : '🌙'}</Text>
           </Pressable>
-          <TouchableOpacity
+          <AnimatedButton
             onPress={handleLogout}
             style={{ backgroundColor: dark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.1)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }}
           >
             <Text style={{ color: '#ef4444', fontWeight: 'bold', fontSize: 13 }}>خروج</Text>
-          </TouchableOpacity>
+          </AnimatedButton>
         </View>
         <View style={{ alignItems: 'center' }}>
           <Text style={{ color: c.text, fontSize: 18, fontWeight: 'bold' }}>🍽️ لوحة الكاشير</Text>
           <Text style={{ color: c.subtext, fontSize: 11, marginTop: 2 }}>تحديث فوري</Text>
         </View>
-        <TouchableOpacity
+        <AnimatedButton
           onPress={() => router.push('/(admin)/menu')}
           style={{ backgroundColor: dark ? 'rgba(249,115,22,0.15)' : 'rgba(249,115,22,0.1)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)' }}
         >
           <Text style={{ color: '#f97316', fontWeight: 'bold', fontSize: 13 }}>المنيو</Text>
-        </TouchableOpacity>
+        </AnimatedButton>
       </View>
 
       {/* Stats */}
@@ -172,7 +173,7 @@ export default function AdminDashboardScreen() {
         {(['all', 'pending', 'preparing', 'ready', 'completed'] as const).map((tab) => {
           const active = filter === tab;
           return (
-            <TouchableOpacity
+            <AnimatedButton
               key={tab}
               onPress={() => setFilter(tab)}
               style={{
@@ -187,7 +188,7 @@ export default function AdminDashboardScreen() {
                   ? ` (${orders.filter((o) => o.status === tab).length})`
                   : ''}
               </Text>
-            </TouchableOpacity>
+            </AnimatedButton>
           );
         })}
       </ScrollView>
@@ -263,12 +264,12 @@ export default function AdminDashboardScreen() {
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, backgroundColor: c.cardFooter, borderTopWidth: 1, borderTopColor: c.itemBorder }}>
                     <View>
                       {cfg.next ? (
-                        <TouchableOpacity
+                        <AnimatedButton
                           onPress={() => updateStatus(order.id, cfg.next!)}
                           style={{ backgroundColor: '#f97316', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12 }}
                         >
                           <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 13 }}>{cfg.nextLabel}</Text>
-                        </TouchableOpacity>
+                        </AnimatedButton>
                       ) : (
                         <View style={{ backgroundColor: dark ? '#334155' : '#f1f5f9', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12 }}>
                           <Text style={{ color: c.subtext, fontWeight: 'bold', fontSize: 13 }}>✓ مكتمل</Text>

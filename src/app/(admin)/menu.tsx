@@ -1,8 +1,10 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View, ActivityIndicator, Modal } from 'react-native';
+import { Alert, ScrollView, Text, TextInput, View, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
+import { useDarkMode } from '../../context/ThemeContext';
+import { AnimatedButton } from '../../components/animated-button';
 
 const DEFAULT_IMAGE = 'https://via.placeholder.com/300x200.png?text=Food';
 
@@ -10,24 +12,25 @@ type Category = { id: string; name: string };
 type Item = { id: string; category_id: string; name: string; description: string; price: number; image_url: string; is_available: boolean; extras_json?: string };
 type Extra = { id: string; name: string; price: number };
 
-function InputField({ label, value, onChangeText, placeholder, keyboardType = 'default' }: any) {
-  return (
-    <View className="mb-3">
-      {label && <Text className="text-gray-400 text-xs text-right mb-1">{label}</Text>}
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor="#6b7280"
-        keyboardType={keyboardType}
-        className="bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-right text-white"
-      />
-    </View>
-  );
-}
-
 export default function AdminMenuScreen() {
   const router = useRouter();
+  const { dark } = useDarkMode();
+
+  const c = {
+    bg: dark ? '#111827' : '#f9fafb',
+    surface: dark ? '#1f2937' : '#ffffff',
+    surface2: dark ? '#374151' : '#f3f4f6',
+    border: dark ? '#374151' : '#e5e7eb',
+    border2: dark ? '#4b5563' : '#d1d5db',
+    text: dark ? '#f9fafb' : '#111827',
+    subtext: dark ? '#9ca3af' : '#6b7280',
+    muted: dark ? '#6b7280' : '#9ca3af',
+    inputBg: dark ? '#111827' : '#f9fafb',
+    modalBg: dark ? '#1f2937' : '#ffffff',
+    modalHeader: dark ? '#374151' : '#f3f4f6',
+    placeholderColor: dark ? '#6b7280' : '#9ca3af',
+  };
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
@@ -168,93 +171,103 @@ export default function AdminMenuScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
+    <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
 
       {/* Edit Modal */}
       <Modal visible={!!editingItem} animationType="slide" transparent>
-        <View className="flex-1 bg-black/60 justify-end">
-          <View className="bg-gray-800 rounded-t-3xl" style={{ maxHeight: '92%' }}>
-            {/* Header */}
-            <View className="flex-row justify-between items-center p-6 pb-4 border-b border-gray-700">
-              <TouchableOpacity onPress={() => setEditingItem(null)} className="bg-gray-700 px-4 py-2 rounded-xl">
-                <Text className="text-gray-300 font-bold">إلغاء</Text>
-              </TouchableOpacity>
-              <Text className="text-white font-bold text-lg">✏️ تعديل الطبق</Text>
-              <TouchableOpacity onPress={handleSaveEdit} disabled={saving} className="bg-orange-500 px-4 py-2 rounded-xl">
-                <Text className="text-white font-bold">{saving ? '...' : 'حفظ'}</Text>
-              </TouchableOpacity>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: c.modalBg, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '92%' }}>
+            {/* Modal Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: c.border }}>
+              <AnimatedButton
+                onPress={() => setEditingItem(null)}
+                style={{ backgroundColor: c.surface2, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 }}
+              >
+                <Text style={{ color: c.subtext, fontWeight: 'bold' }}>إلغاء</Text>
+              </AnimatedButton>
+              <Text style={{ color: c.text, fontWeight: 'bold', fontSize: 17 }}>✏️ تعديل الطبق</Text>
+              <AnimatedButton
+                onPress={handleSaveEdit}
+                disabled={saving}
+                style={{ backgroundColor: '#f97316', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 }}
+              >
+                <Text style={{ color: 'white', fontWeight: 'bold' }}>{saving ? '...' : 'حفظ'}</Text>
+              </AnimatedButton>
             </View>
 
-            <ScrollView className="px-6 pt-4" contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ paddingHorizontal: 20, paddingTop: 16 }} contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
               {/* Category */}
-              <Text className="text-gray-400 text-xs text-right mb-2">القسم</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4" style={{ flexDirection: 'row-reverse' }}>
+              <Text style={{ color: c.subtext, fontSize: 12, textAlign: 'right', marginBottom: 8 }}>القسم</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16, flexDirection: 'row-reverse' }}>
                 {categories.map((cat) => (
-                  <TouchableOpacity
+                  <AnimatedButton
                     key={cat.id}
                     onPress={() => setEditForm((p) => ({ ...p, category_id: cat.id }))}
-                    className={`px-4 py-2 rounded-full mr-2 border ${editForm.category_id === cat.id ? 'bg-orange-500 border-orange-500' : 'bg-gray-700 border-gray-600'}`}
+                    style={{
+                      paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginRight: 8,
+                      backgroundColor: editForm.category_id === cat.id ? '#f97316' : c.surface2,
+                      borderWidth: 1, borderColor: editForm.category_id === cat.id ? '#f97316' : c.border2,
+                    }}
                   >
-                    <Text className={`font-bold text-sm ${editForm.category_id === cat.id ? 'text-white' : 'text-gray-300'}`}>{cat.name}</Text>
-                  </TouchableOpacity>
+                    <Text style={{ color: editForm.category_id === cat.id ? 'white' : c.subtext, fontWeight: 'bold', fontSize: 13 }}>{cat.name}</Text>
+                  </AnimatedButton>
                 ))}
               </ScrollView>
 
-              <InputField label="اسم الطبق" value={editForm.name} onChangeText={(v: string) => setEditForm((p) => ({ ...p, name: v }))} placeholder="اسم الطبق" />
-              <InputField label="الوصف" value={editForm.description} onChangeText={(v: string) => setEditForm((p) => ({ ...p, description: v }))} placeholder="وصف الطبق" />
-              <InputField label="السعر (د.ع)" value={editForm.price} onChangeText={(v: string) => setEditForm((p) => ({ ...p, price: v }))} placeholder="السعر" keyboardType="decimal-pad" />
-              <InputField label="رابط الصورة" value={editForm.image_url} onChangeText={(v: string) => setEditForm((p) => ({ ...p, image_url: v }))} placeholder="رابط الصورة (اختياري)" />
+              <InputField dark={dark} c={c} label="اسم الطبق" value={editForm.name} onChangeText={(v: string) => setEditForm((p) => ({ ...p, name: v }))} placeholder="اسم الطبق" />
+              <InputField dark={dark} c={c} label="الوصف" value={editForm.description} onChangeText={(v: string) => setEditForm((p) => ({ ...p, description: v }))} placeholder="وصف الطبق" />
+              <InputField dark={dark} c={c} label="السعر (د.ع)" value={editForm.price} onChangeText={(v: string) => setEditForm((p) => ({ ...p, price: v }))} placeholder="السعر" keyboardType="decimal-pad" />
+              <InputField dark={dark} c={c} label="رابط الصورة" value={editForm.image_url} onChangeText={(v: string) => setEditForm((p) => ({ ...p, image_url: v }))} placeholder="رابط الصورة (اختياري)" />
 
-              {/* ── Extras Section ── */}
-              <View className="mt-2 mb-3 border-t border-gray-700 pt-4">
-                <Text className="text-white font-bold text-right text-base mb-3">🧂 الإضافات المقترحة</Text>
-
-                {/* Current extras */}
+              {/* Extras */}
+              <View style={{ marginTop: 8, marginBottom: 12, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 16 }}>
+                <Text style={{ color: c.text, fontWeight: 'bold', textAlign: 'right', fontSize: 15, marginBottom: 12 }}>🧂 الإضافات المقترحة</Text>
                 {extras.length === 0 ? (
-                  <Text className="text-gray-500 text-right text-sm mb-3">لا توجد إضافات بعد</Text>
+                  <Text style={{ color: c.muted, textAlign: 'right', fontSize: 13, marginBottom: 12 }}>لا توجد إضافات بعد</Text>
                 ) : (
-                  <View className="mb-3">
+                  <View style={{ marginBottom: 12 }}>
                     {extras.map(e => (
-                      <View key={e.id} className="flex-row justify-between items-center bg-gray-900 rounded-xl px-4 py-3 mb-2 border border-gray-700">
-                        <TouchableOpacity onPress={() => handleDeleteExtra(e.id)} className="bg-red-500/20 px-3 py-1 rounded-lg border border-red-500/30">
-                          <Text className="text-red-400 text-xs font-bold">حذف</Text>
-                        </TouchableOpacity>
-                        <View className="items-end flex-1 mr-3">
-                          <Text className="text-white font-bold text-sm">{e.name}</Text>
-                          {e.price > 0 && <Text className="text-orange-400 text-xs mt-0.5">+{e.price.toLocaleString()} د.ع</Text>}
-                          {e.price === 0 && <Text className="text-gray-500 text-xs mt-0.5">مجاني</Text>}
+                      <View key={e.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: c.inputBg, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 8, borderWidth: 1, borderColor: c.border }}>
+                        <AnimatedButton
+                          onPress={() => handleDeleteExtra(e.id)}
+                          style={{ backgroundColor: 'rgba(239,68,68,0.15)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }}
+                        >
+                          <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: 'bold' }}>حذف</Text>
+                        </AnimatedButton>
+                        <View style={{ alignItems: 'flex-end', flex: 1, marginRight: 12 }}>
+                          <Text style={{ color: c.text, fontWeight: 'bold', fontSize: 13 }}>{e.name}</Text>
+                          {e.price > 0 && <Text style={{ color: '#f97316', fontSize: 12, marginTop: 2 }}>+{e.price.toLocaleString()} د.ع</Text>}
+                          {e.price === 0 && <Text style={{ color: c.muted, fontSize: 12, marginTop: 2 }}>مجاني</Text>}
                         </View>
                       </View>
                     ))}
                   </View>
                 )}
-
-                {/* Add new extra */}
-                <View className="bg-gray-900 rounded-xl p-3 border border-gray-700 border-dashed">
-                  <Text className="text-gray-400 text-xs text-right mb-2">إضافة جديدة</Text>
+                <View style={{ backgroundColor: c.inputBg, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: c.border2, borderStyle: 'dashed' }}>
+                  <Text style={{ color: c.subtext, fontSize: 12, textAlign: 'right', marginBottom: 8 }}>إضافة جديدة</Text>
                   <TextInput
                     value={newExtraName}
                     onChangeText={setNewExtraName}
                     placeholder="اسم الإضافة (مثال: صوص، ببسي...)"
-                    placeholderTextColor="#6b7280"
-                    className="bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-right text-white mb-2"
+                    placeholderTextColor={c.placeholderColor}
+                    style={{ backgroundColor: c.surface2, borderWidth: 1, borderColor: c.border, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, textAlign: 'right', color: c.text, marginBottom: 8 }}
                   />
-                  <View className="flex-row gap-2">
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
                     <TextInput
                       value={newExtraPrice}
                       onChangeText={setNewExtraPrice}
                       placeholder="السعر (0 = مجاني)"
-                      placeholderTextColor="#6b7280"
+                      placeholderTextColor={c.placeholderColor}
                       keyboardType="decimal-pad"
-                      className="bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-right text-white flex-1"
+                      style={{ backgroundColor: c.surface2, borderWidth: 1, borderColor: c.border, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, textAlign: 'right', color: c.text, flex: 1 }}
                     />
-                    <TouchableOpacity
+                    <AnimatedButton
                       onPress={handleAddExtra}
                       disabled={savingExtra || !newExtraName.trim()}
-                      className={`px-5 rounded-xl items-center justify-center ${newExtraName.trim() ? 'bg-orange-500' : 'bg-gray-700'}`}
+                      style={{ paddingHorizontal: 20, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: newExtraName.trim() ? '#f97316' : c.surface2 }}
                     >
-                      <Text className="text-white font-bold text-lg">{savingExtra ? '...' : '+'}</Text>
-                    </TouchableOpacity>
+                      <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>{savingExtra ? '...' : '+'}</Text>
+                    </AnimatedButton>
                   </View>
                 </View>
               </View>
@@ -264,111 +277,134 @@ export default function AdminMenuScreen() {
       </Modal>
 
       {/* Header */}
-      <View className="flex-row justify-between items-center px-5 py-4 border-b border-gray-800">
-        <TouchableOpacity onPress={() => router.push('/(admin)/dashboard')} className="bg-gray-800 px-4 py-2 rounded-xl border border-gray-700">
-          <Text className="text-gray-300 font-bold">← رجوع</Text>
-        </TouchableOpacity>
-        <Text className="text-white text-xl font-bold">🍴 تعديل المنيو</Text>
-        <View className="w-20" />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: c.border, backgroundColor: c.surface }}>
+        <AnimatedButton
+          onPress={() => router.push('/(admin)/dashboard')}
+          style={{ backgroundColor: c.surface2, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: c.border }}
+        >
+          <Text style={{ color: c.subtext, fontWeight: 'bold' }}>← رجوع</Text>
+        </AnimatedButton>
+        <Text style={{ color: c.text, fontSize: 20, fontWeight: 'bold' }}>🍴 تعديل المنيو</Text>
+        <View style={{ width: 80 }} />
       </View>
 
       {/* Toast */}
       {message && (
-        <View className={`mx-4 mt-3 px-4 py-3 rounded-xl border ${message.success ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
-          <Text className={`text-center font-bold ${message.success ? 'text-green-400' : 'text-red-400'}`}>{message.text}</Text>
+        <View style={{ marginHorizontal: 16, marginTop: 12, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1, backgroundColor: message.success ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', borderColor: message.success ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)' }}>
+          <Text style={{ textAlign: 'center', fontWeight: 'bold', color: message.success ? '#22c55e' : '#ef4444' }}>{message.text}</Text>
         </View>
       )}
 
       {/* Tabs */}
-      <View className="flex-row mx-4 mt-4 mb-4 bg-gray-800 rounded-2xl p-1">
-        <TouchableOpacity onPress={() => setActiveTab('add')} className={`flex-1 py-2.5 rounded-xl items-center ${activeTab === 'add' ? 'bg-orange-500' : ''}`}>
-          <Text className={`font-bold ${activeTab === 'add' ? 'text-white' : 'text-gray-400'}`}>إضافة</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setActiveTab('list')} className={`flex-1 py-2.5 rounded-xl items-center ${activeTab === 'list' ? 'bg-orange-500' : ''}`}>
-          <Text className={`font-bold ${activeTab === 'list' ? 'text-white' : 'text-gray-400'}`}>القائمة ({items.length})</Text>
-        </TouchableOpacity>
+      <View style={{ flexDirection: 'row', marginHorizontal: 16, marginTop: 16, marginBottom: 16, backgroundColor: c.surface2, borderRadius: 16, padding: 4 }}>
+        <AnimatedButton onPress={() => setActiveTab('add')} style={{ flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', backgroundColor: activeTab === 'add' ? '#f97316' : 'transparent' }}>
+          <Text style={{ fontWeight: 'bold', color: activeTab === 'add' ? 'white' : c.subtext }}>إضافة</Text>
+        </AnimatedButton>
+        <AnimatedButton onPress={() => setActiveTab('list')} style={{ flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', backgroundColor: activeTab === 'list' ? '#f97316' : 'transparent' }}>
+          <Text style={{ fontWeight: 'bold', color: activeTab === 'list' ? 'white' : c.subtext }}>القائمة ({items.length})</Text>
+        </AnimatedButton>
       </View>
 
       {loading ? (
-        <View className="flex-1 items-center justify-center">
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color="#f97316" />
         </View>
       ) : activeTab === 'add' ? (
-        <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 32 }}>
-          <View className="bg-gray-800 rounded-2xl p-4 mb-4 border border-gray-700">
-            <Text className="text-white font-bold text-right mb-3 text-base">➕ قسم جديد</Text>
-            <InputField value={newCategory} onChangeText={setNewCategory} placeholder="اسم القسم" />
-            <TouchableOpacity onPress={handleAddCategory} disabled={saving} className="bg-orange-500 py-3 rounded-xl items-center mt-1">
-              <Text className="text-white font-bold">{saving ? 'جاري الحفظ...' : 'إضافة القسم'}</Text>
-            </TouchableOpacity>
+        <ScrollView style={{ flex: 1, paddingHorizontal: 16 }} contentContainerStyle={{ paddingBottom: 32 }}>
+          {/* Add Category */}
+          <View style={{ backgroundColor: c.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: c.border }}>
+            <Text style={{ color: c.text, fontWeight: 'bold', textAlign: 'right', marginBottom: 12, fontSize: 15 }}>➕ قسم جديد</Text>
+            <InputField dark={dark} c={c} value={newCategory} onChangeText={setNewCategory} placeholder="اسم القسم" />
+            <AnimatedButton
+              onPress={handleAddCategory}
+              disabled={saving}
+              style={{ backgroundColor: '#f97316', paddingVertical: 12, borderRadius: 12, alignItems: 'center', marginTop: 4 }}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>{saving ? 'جاري الحفظ...' : 'إضافة القسم'}</Text>
+            </AnimatedButton>
           </View>
 
-          <View className="bg-gray-800 rounded-2xl p-4 border border-gray-700">
-            <Text className="text-white font-bold text-right mb-4 text-base">🍽️ طبق جديد</Text>
-            <Text className="text-gray-400 text-right mb-2 text-sm">اختر القسم</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4" style={{ flexDirection: 'row-reverse' }}>
+          {/* Add Item */}
+          <View style={{ backgroundColor: c.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: c.border }}>
+            <Text style={{ color: c.text, fontWeight: 'bold', textAlign: 'right', marginBottom: 16, fontSize: 15 }}>🍽️ طبق جديد</Text>
+            <Text style={{ color: c.subtext, textAlign: 'right', marginBottom: 8, fontSize: 13 }}>اختر القسم</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16, flexDirection: 'row-reverse' }}>
               {categories.map((cat) => (
-                <TouchableOpacity
+                <AnimatedButton
                   key={cat.id}
                   onPress={() => setForm((p) => ({ ...p, category_id: cat.id }))}
-                  className={`px-4 py-2 rounded-full mr-2 border ${form.category_id === cat.id ? 'bg-orange-500 border-orange-500' : 'bg-gray-700 border-gray-600'}`}
+                  style={{
+                    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginRight: 8,
+                    backgroundColor: form.category_id === cat.id ? '#f97316' : c.surface2,
+                    borderWidth: 1, borderColor: form.category_id === cat.id ? '#f97316' : c.border2,
+                  }}
                 >
-                  <Text className={`font-bold text-sm ${form.category_id === cat.id ? 'text-white' : 'text-gray-300'}`}>{cat.name}</Text>
-                </TouchableOpacity>
+                  <Text style={{ color: form.category_id === cat.id ? 'white' : c.subtext, fontWeight: 'bold', fontSize: 13 }}>{cat.name}</Text>
+                </AnimatedButton>
               ))}
             </ScrollView>
-            <InputField value={form.name} onChangeText={(v: string) => setForm((p) => ({ ...p, name: v }))} placeholder="اسم الطبق *" />
-            <InputField value={form.description} onChangeText={(v: string) => setForm((p) => ({ ...p, description: v }))} placeholder="وصف الطبق" />
-            <InputField value={form.price} onChangeText={(v: string) => setForm((p) => ({ ...p, price: v }))} placeholder="السعر * (د.ع)" keyboardType="decimal-pad" />
-            <InputField value={form.image_url} onChangeText={(v: string) => setForm((p) => ({ ...p, image_url: v }))} placeholder="رابط الصورة (اختياري)" />
-            <TouchableOpacity onPress={handleAddItem} disabled={saving} className="bg-orange-500 py-3.5 rounded-xl items-center mt-2">
-              <Text className="text-white font-bold text-base">{saving ? 'جاري الحفظ...' : 'إضافة الطبق'}</Text>
-            </TouchableOpacity>
+            <InputField dark={dark} c={c} value={form.name} onChangeText={(v: string) => setForm((p) => ({ ...p, name: v }))} placeholder="اسم الطبق *" />
+            <InputField dark={dark} c={c} value={form.description} onChangeText={(v: string) => setForm((p) => ({ ...p, description: v }))} placeholder="وصف الطبق" />
+            <InputField dark={dark} c={c} value={form.price} onChangeText={(v: string) => setForm((p) => ({ ...p, price: v }))} placeholder="السعر * (د.ع)" keyboardType="decimal-pad" />
+            <InputField dark={dark} c={c} value={form.image_url} onChangeText={(v: string) => setForm((p) => ({ ...p, image_url: v }))} placeholder="رابط الصورة (اختياري)" />
+            <AnimatedButton
+              onPress={handleAddItem}
+              disabled={saving}
+              style={{ backgroundColor: '#f97316', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 8 }}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 15 }}>{saving ? 'جاري الحفظ...' : 'إضافة الطبق'}</Text>
+            </AnimatedButton>
           </View>
         </ScrollView>
       ) : (
-        <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 32 }}>
+        <ScrollView style={{ flex: 1, paddingHorizontal: 16 }} contentContainerStyle={{ paddingBottom: 32 }}>
           {categories.map((cat) => {
             const catItems = items.filter((i) => i.category_id === cat.id);
             return (
-              <View key={cat.id} className="mb-5">
-                <View className="flex-row items-center justify-end mb-3">
-                  <Text className="text-white font-bold text-lg">{cat.name}</Text>
-                  <View className="bg-orange-500/20 border border-orange-500/30 px-2.5 py-0.5 rounded-full ml-2">
-                    <Text className="text-orange-400 text-xs font-bold">{catItems.length}</Text>
+              <View key={cat.id} style={{ marginBottom: 20 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 12 }}>
+                  <Text style={{ color: c.text, fontWeight: 'bold', fontSize: 17 }}>{cat.name}</Text>
+                  <View style={{ backgroundColor: 'rgba(249,115,22,0.15)', borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)', paddingHorizontal: 10, paddingVertical: 2, borderRadius: 20, marginLeft: 8 }}>
+                    <Text style={{ color: '#f97316', fontSize: 12, fontWeight: 'bold' }}>{catItems.length}</Text>
                   </View>
                 </View>
 
                 {catItems.length === 0 ? (
-                  <View className="bg-gray-800 rounded-xl p-4 border border-gray-700 border-dashed items-center">
-                    <Text className="text-gray-500">لا توجد أطباق في هذا القسم</Text>
+                  <View style={{ backgroundColor: c.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: c.border, alignItems: 'center' }}>
+                    <Text style={{ color: c.muted }}>لا توجد أطباق في هذا القسم</Text>
                   </View>
                 ) : (
                   catItems.map((item) => (
-                    <View key={item.id} className={`rounded-2xl mb-3 border overflow-hidden ${item.is_available ? 'bg-gray-800 border-gray-700' : 'bg-gray-800/60 border-gray-700/50'}`}>
-                      <View className="flex-row justify-between items-center p-4">
-                        <View className="flex-row gap-2">
-                          <TouchableOpacity onPress={() => deleteItem(item.id)} className="bg-red-500/20 border border-red-500/30 px-3 py-1.5 rounded-lg">
-                            <Text className="text-red-400 text-xs font-bold">حذف</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => openEdit(item)} className="bg-blue-500/20 border border-blue-500/30 px-3 py-1.5 rounded-lg">
-                            <Text className="text-blue-400 text-xs font-bold">✏️ تعديل</Text>
-                          </TouchableOpacity>
+                    <View key={item.id} style={{ borderRadius: 16, marginBottom: 12, borderWidth: 1, overflow: 'hidden', backgroundColor: item.is_available ? c.surface : (dark ? 'rgba(31,41,55,0.6)' : 'rgba(249,250,251,0.6)'), borderColor: item.is_available ? c.border : c.border2 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 }}>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <AnimatedButton
+                            onPress={() => deleteItem(item.id)}
+                            style={{ backgroundColor: 'rgba(239,68,68,0.15)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}
+                          >
+                            <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: 'bold' }}>حذف</Text>
+                          </AnimatedButton>
+                          <AnimatedButton
+                            onPress={() => openEdit(item)}
+                            style={{ backgroundColor: 'rgba(59,130,246,0.15)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}
+                          >
+                            <Text style={{ color: '#3b82f6', fontSize: 12, fontWeight: 'bold' }}>✏️ تعديل</Text>
+                          </AnimatedButton>
                         </View>
-                        <View className="items-end flex-1 mr-3">
-                          <Text className={`font-bold text-base ${item.is_available ? 'text-white' : 'text-gray-500'}`}>{item.name}</Text>
-                          {item.description ? <Text className="text-gray-400 text-xs mt-0.5 text-right" numberOfLines={1}>{item.description}</Text> : null}
-                          <Text className={`font-bold mt-1 ${item.is_available ? 'text-orange-400' : 'text-gray-500'}`}>{item.price.toLocaleString()} د.ع</Text>
+                        <View style={{ alignItems: 'flex-end', flex: 1, marginRight: 12 }}>
+                          <Text style={{ fontWeight: 'bold', fontSize: 15, color: item.is_available ? c.text : c.muted }}>{item.name}</Text>
+                          {item.description ? <Text style={{ color: c.subtext, fontSize: 12, marginTop: 2, textAlign: 'right' }} numberOfLines={1}>{item.description}</Text> : null}
+                          <Text style={{ fontWeight: 'bold', marginTop: 4, color: item.is_available ? '#f97316' : c.muted }}>{item.price.toLocaleString()} د.ع</Text>
                         </View>
                       </View>
-                      <TouchableOpacity
+                      <AnimatedButton
                         onPress={() => toggleAvailable(item)}
-                        className={`mx-4 mb-4 py-2.5 rounded-xl items-center border ${item.is_available ? 'bg-green-500/10 border-green-500/30' : 'bg-gray-700 border-gray-600'}`}
+                        style={{ marginHorizontal: 16, marginBottom: 16, paddingVertical: 10, borderRadius: 12, alignItems: 'center', borderWidth: 1, backgroundColor: item.is_available ? 'rgba(34,197,94,0.1)' : c.surface2, borderColor: item.is_available ? 'rgba(34,197,94,0.3)' : c.border }}
                       >
-                        <Text className={`font-bold text-sm ${item.is_available ? 'text-green-400' : 'text-gray-400'}`}>
+                        <Text style={{ fontWeight: 'bold', fontSize: 13, color: item.is_available ? '#22c55e' : c.subtext }}>
                           {item.is_available ? '● متاح للزبائن — اضغط للإخفاء' : '○ مخفي عن الزبائن — اضغط للإتاحة'}
                         </Text>
-                      </TouchableOpacity>
+                      </AnimatedButton>
                     </View>
                   ))
                 )}
@@ -378,5 +414,21 @@ export default function AdminMenuScreen() {
         </ScrollView>
       )}
     </SafeAreaView>
+  );
+}
+
+function InputField({ dark, c, label, value, onChangeText, placeholder, keyboardType = 'default' }: any) {
+  return (
+    <View style={{ marginBottom: 12 }}>
+      {label && <Text style={{ color: c.subtext, fontSize: 12, textAlign: 'right', marginBottom: 4 }}>{label}</Text>}
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={c.placeholderColor}
+        keyboardType={keyboardType}
+        style={{ backgroundColor: c.inputBg, borderWidth: 1, borderColor: c.border, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, textAlign: 'right', color: c.text }}
+      />
+    </View>
   );
 }
