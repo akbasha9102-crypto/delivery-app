@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { useCart } from '../../context/CartContext';
@@ -75,14 +75,20 @@ export default function CartScreen() {
       Alert.alert('السلة فارغة');
       return;
     }
-    Alert.alert(
-      'تأكيد رقم الهاتف',
-      `هل رقم هاتفك صحيح؟\n\n${phone.trim()}`,
-      [
-        { text: 'تعديل', style: 'cancel' },
-        { text: 'نعم، أرسل الطلب', onPress: submitOrder },
-      ]
-    );
+    if (Platform.OS === 'web') {
+      if (window.confirm(`هل رقم هاتفك صحيح؟\n\n${phone.trim()}`)) {
+        submitOrder();
+      }
+    } else {
+      Alert.alert(
+        'تأكيد رقم الهاتف',
+        `هل رقم هاتفك صحيح؟\n\n${phone.trim()}`,
+        [
+          { text: 'تعديل', style: 'cancel' },
+          { text: 'نعم، أرسل الطلب', onPress: submitOrder },
+        ]
+      );
+    }
   };
 
   return (
