@@ -102,8 +102,7 @@ export default function AdminMenuScreen() {
     });
     setNewExtraName('');
     setNewExtraPrice('');
-    const { data } = await supabase.from('item_extras').select('*').eq('item_id', item.id).order('created_at');
-    setExtras(data || []);
+    await openEditExtras(item.id);
   };
 
   const handleSaveEdit = async () => {
@@ -136,13 +135,21 @@ export default function AdminMenuScreen() {
       .select()
       .single();
     if (error) {
-      showMsg('تعذّر حفظ الإضافة: ' + error.message, false);
+      Alert.alert('خطأ في حفظ الإضافة', error.message);
     } else if (data) {
       setExtras(prev => [...prev, data]);
       setNewExtraName('');
       setNewExtraPrice('');
+    } else {
+      Alert.alert('خطأ', 'لم يتم الحفظ، حاول مرة ثانية');
     }
     setSavingExtra(false);
+  };
+
+  const openEditExtras = async (itemId: string) => {
+    const { data, error } = await supabase.from('item_extras').select('*').eq('item_id', itemId).order('created_at');
+    if (error) Alert.alert('خطأ في تحميل الإضافات', error.message);
+    setExtras(data || []);
   };
 
   const handleDeleteExtra = async (id: string) => {
