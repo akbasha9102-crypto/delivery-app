@@ -1,9 +1,29 @@
 import { Tabs } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useDarkMode } from '@/context/ThemeContext';
+import { AnimatedTabBarButton } from '@/components/animated-tab-bar-button';
 
 export default function AdminLayout() {
+  const { dark } = useDarkMode();
+
+  const tabBarBg = dark ? '#1a1a1a' : '#ffffff';
+  const borderColor = dark ? '#2a2a2a' : '#e5e7eb';
+  const inactiveColor = dark ? '#888888' : '#8e8e93';
+
   return (
-    <Tabs screenOptions={{ tabBarActiveTintColor: '#2563eb', headerShown: false }}>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: '#2563eb',
+        tabBarInactiveTintColor: inactiveColor,
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: tabBarBg,
+          borderTopColor: borderColor,
+          borderTopWidth: 1,
+        },
+        tabBarButton: (props) => <AnimatedTabBarButton {...props} />,
+      }}
+    >
       <Tabs.Screen
         name="dashboard"
         options={{
