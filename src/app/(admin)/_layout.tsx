@@ -4,11 +4,13 @@ import { useDarkMode } from '@/context/ThemeContext';
 import { AnimatedTabBarButton } from '@/components/animated-tab-bar-button';
 
 export default function AdminLayout() {
-  const { dark } = useDarkMode();
+  const { dark, loaded } = useDarkMode();
 
   const tabBarBg = dark ? '#1a1a1a' : '#ffffff';
   const borderColor = dark ? '#2a2a2a' : '#e5e7eb';
   const inactiveColor = dark ? '#888888' : '#8e8e93';
+
+  if (!loaded) return null;
 
   return (
     <Tabs
@@ -22,6 +24,7 @@ export default function AdminLayout() {
           borderTopWidth: 1,
         },
         tabBarButton: (props) => <AnimatedTabBarButton {...props} />,
+        sceneStyle: { backgroundColor: dark ? '#0f172a' : '#f1f5f9' },
       }}
     >
       <Tabs.Screen
