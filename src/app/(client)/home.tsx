@@ -76,7 +76,7 @@ export default function HomeScreen() {
       const [{ data: cats }, { data: meals }, { data: settings }] = await Promise.all([
         db.from('categories').select('*').order('name'),
         db.from('items').select('*'),
-        db.from('restaurant_settings').select('primary_color').limit(1).single(),
+        db.from('restaurant_settings').select('primary_color').limit(1).maybeSingle(),
       ]);
       setCategories(cats || []);
       setItems(meals || []);

@@ -42,14 +42,12 @@ export default function AppearanceScreen() {
 
   const fetchSettings = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('restaurant_settings')
       .select('*')
       .limit(1)
-      .single();
-    if (error) {
-      Alert.alert('خطأ', 'تعذّر تحميل الإعدادات');
-    } else if (data) {
+      .maybeSingle();
+    if (data) {
       setSettings(data);
       setName(data.restaurant_name);
       setColor(data.primary_color);
