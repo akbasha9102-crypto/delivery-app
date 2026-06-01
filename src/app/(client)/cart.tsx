@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { useCart } from '../../context/CartContext';
 import { useDarkMode } from '../../context/ThemeContext';
+import { StaggerItem } from '../../components/stagger-item';
 
 const PHONE_STORAGE_KEY = 'deliveryPhone';
 
@@ -126,11 +127,14 @@ export default function CartScreen() {
         </View>
       </Modal>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: c.header, borderBottomWidth: 1, borderBottomColor: c.cardBorder, elevation: 3 }}>
-        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#944a00' }}>سلة المشتريات</Text>
-      </View>
+      <StaggerItem index={0}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: c.header, borderBottomWidth: 1, borderBottomColor: c.cardBorder, elevation: 3 }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#944a00' }}>سلة المشتريات</Text>
+        </View>
+      </StaggerItem>
 
       <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }} contentContainerStyle={{ paddingBottom: 32 }}>
+        <StaggerItem index={1}>
         {items.length === 0 ? (
           <Text style={{ textAlign: 'center', color: c.subtext, marginTop: 80, fontSize: 16 }}>السلة فارغة</Text>
         ) : (
@@ -154,48 +158,53 @@ export default function CartScreen() {
             </View>
           ))
         )}
+        </StaggerItem>
 
-        <View style={{ backgroundColor: c.card, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: c.cardBorder, marginTop: 8, marginBottom: 8 }}>
-          <Text style={{ fontWeight: 'bold', textAlign: 'right', color: c.text, marginBottom: 12 }}>معلومات الطلب</Text>
-          <TextInput
-            value={name} onChangeText={setName} placeholder="الاسم"
-            placeholderTextColor={c.placeholder} style={inputStyle}
-          />
-          <TextInput
-            value={phone} onChangeText={setPhone} placeholder="رقم الهاتف"
-            placeholderTextColor={c.placeholder} keyboardType="phone-pad" style={inputStyle}
-          />
-          <TextInput
-            value={address} onChangeText={setAddress} placeholder="العنوان"
-            placeholderTextColor={c.placeholder} style={inputStyle}
-          />
-          <TextInput
-            value={note} onChangeText={setNote} placeholder="ملاحظات (اختياري)"
-            placeholderTextColor={c.placeholder} style={{ ...inputStyle, marginBottom: 0 }}
-          />
-        </View>
-
-        <View style={{ backgroundColor: c.card, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: c.cardBorder, marginTop: 8 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: c.cardBorder, paddingTop: 8, marginTop: 4 }}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#e67e22' }}>{total.toLocaleString()} د.ع</Text>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, color: c.text }}>الإجمالي</Text>
+        <StaggerItem index={2}>
+          <View style={{ backgroundColor: c.card, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: c.cardBorder, marginTop: 8, marginBottom: 8 }}>
+            <Text style={{ fontWeight: 'bold', textAlign: 'right', color: c.text, marginBottom: 12 }}>معلومات الطلب</Text>
+            <TextInput
+              value={name} onChangeText={setName} placeholder="الاسم"
+              placeholderTextColor={c.placeholder} style={inputStyle}
+            />
+            <TextInput
+              value={phone} onChangeText={setPhone} placeholder="رقم الهاتف"
+              placeholderTextColor={c.placeholder} keyboardType="phone-pad" style={inputStyle}
+            />
+            <TextInput
+              value={address} onChangeText={setAddress} placeholder="العنوان"
+              placeholderTextColor={c.placeholder} style={inputStyle}
+            />
+            <TextInput
+              value={note} onChangeText={setNote} placeholder="ملاحظات (اختياري)"
+              placeholderTextColor={c.placeholder} style={{ ...inputStyle, marginBottom: 0 }}
+            />
           </View>
-        </View>
+        </StaggerItem>
 
-        <Pressable
-          onPress={handleConfirmOrder}
-          disabled={loading}
-          style={({ pressed }) => ({
-            width: '100%', paddingVertical: 16, borderRadius: 14, alignItems: 'center',
-            marginTop: 20, marginBottom: 8,
-            backgroundColor: loading ? '#9ca3af' : '#e67e22',
-            transform: [{ scale: pressed && !loading ? 0.97 : 1 }],
-          })}
-        >
-          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 17 }}>
-            {loading ? 'جاري الإرسال...' : 'تأكيد الطلب'}
-          </Text>
-        </Pressable>
+        <StaggerItem index={3}>
+          <View style={{ backgroundColor: c.card, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: c.cardBorder, marginTop: 8 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: c.cardBorder, paddingTop: 8, marginTop: 4 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#e67e22' }}>{total.toLocaleString()} د.ع</Text>
+              <Text style={{ fontWeight: 'bold', fontSize: 18, color: c.text }}>الإجمالي</Text>
+            </View>
+          </View>
+
+          <Pressable
+            onPress={handleConfirmOrder}
+            disabled={loading}
+            style={({ pressed }) => ({
+              width: '100%', paddingVertical: 16, borderRadius: 14, alignItems: 'center',
+              marginTop: 20, marginBottom: 8,
+              backgroundColor: loading ? '#9ca3af' : '#e67e22',
+              transform: [{ scale: pressed && !loading ? 0.97 : 1 }],
+            })}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 17 }}>
+              {loading ? 'جاري الإرسال...' : 'تأكيد الطلب'}
+            </Text>
+          </Pressable>
+        </StaggerItem>
       </ScrollView>
     </SafeAreaView>
   );

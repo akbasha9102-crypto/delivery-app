@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { useDarkMode } from '../../context/ThemeContext';
 import { AnimatedButton } from '../../components/animated-button';
+import { StaggerItem } from '../../components/stagger-item';
 
 const DEFAULT_IMAGE = 'https://via.placeholder.com/300x200.png?text=Food';
 
@@ -277,6 +278,7 @@ export default function AdminMenuScreen() {
       </Modal>
 
       {/* Header */}
+      <StaggerItem index={0}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: c.border, backgroundColor: c.surface }}>
         <AnimatedButton
           onPress={() => router.push('/(admin)/dashboard')}
@@ -287,6 +289,7 @@ export default function AdminMenuScreen() {
         <Text style={{ color: c.text, fontSize: 20, fontWeight: 'bold' }}>🍴 تعديل المنيو</Text>
         <View style={{ width: 80 }} />
       </View>
+      </StaggerItem>
 
       {/* Toast */}
       {message && (
@@ -296,6 +299,7 @@ export default function AdminMenuScreen() {
       )}
 
       {/* Tabs */}
+      <StaggerItem index={1}>
       <View style={{ flexDirection: 'row', marginHorizontal: 16, marginTop: 16, marginBottom: 16, backgroundColor: c.surface2, borderRadius: 16, padding: 4 }}>
         <AnimatedButton onPress={() => setActiveTab('add')} style={{ flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center', backgroundColor: activeTab === 'add' ? '#f97316' : 'transparent' }}>
           <Text style={{ fontWeight: 'bold', color: activeTab === 'add' ? 'white' : c.subtext }}>إضافة</Text>
@@ -304,7 +308,9 @@ export default function AdminMenuScreen() {
           <Text style={{ fontWeight: 'bold', color: activeTab === 'list' ? 'white' : c.subtext }}>القائمة ({items.length})</Text>
         </AnimatedButton>
       </View>
+      </StaggerItem>
 
+      <StaggerItem index={2} style={{ flex: 1 }}>
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color="#f97316" />
@@ -413,6 +419,7 @@ export default function AdminMenuScreen() {
           })}
         </ScrollView>
       )}
+      </StaggerItem>
     </SafeAreaView>
   );
 }

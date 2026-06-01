@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useDarkMode } from '../../context/ThemeContext';
 import { AnimatedButton } from '../../components/animated-button';
+import { StaggerItem } from '../../components/stagger-item';
 
 type OrderItem = { id: string; item_name: string; quantity: number; price: number };
 type Order = {
@@ -149,26 +150,29 @@ export default function AdminDashboardScreen() {
       </View>
 
       {/* Stats */}
-      <View style={{ flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 12, gap: 8 }}>
-        <View style={{ flex: 1, backgroundColor: c.statCard1, borderWidth: 1, borderColor: 'rgba(234,179,8,0.2)', borderRadius: 16, padding: 10, alignItems: 'center' }}>
-          <Text style={{ color: '#eab308', fontSize: 22, fontWeight: 'bold' }}>{pending}</Text>
-          <Text style={{ color: dark ? 'rgba(234,179,8,0.7)' : '#a16207', fontSize: 10, marginTop: 2, textAlign: 'center' }}>جديدة</Text>
+      <StaggerItem index={0}>
+        <View style={{ flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 12, gap: 8 }}>
+          <View style={{ flex: 1, backgroundColor: c.statCard1, borderWidth: 1, borderColor: 'rgba(234,179,8,0.2)', borderRadius: 16, padding: 10, alignItems: 'center' }}>
+            <Text style={{ color: '#eab308', fontSize: 22, fontWeight: 'bold' }}>{pending}</Text>
+            <Text style={{ color: dark ? 'rgba(234,179,8,0.7)' : '#a16207', fontSize: 10, marginTop: 2, textAlign: 'center' }}>جديدة</Text>
+          </View>
+          <View style={{ flex: 1, backgroundColor: c.statCard2, borderWidth: 1, borderColor: 'rgba(59,130,246,0.2)', borderRadius: 16, padding: 10, alignItems: 'center' }}>
+            <Text style={{ color: '#3b82f6', fontSize: 22, fontWeight: 'bold' }}>{preparing}</Text>
+            <Text style={{ color: dark ? 'rgba(59,130,246,0.7)' : '#1d4ed8', fontSize: 10, marginTop: 2, textAlign: 'center' }}>تجهيز</Text>
+          </View>
+          <View style={{ flex: 1, backgroundColor: c.statCard3, borderWidth: 1, borderColor: 'rgba(34,197,94,0.2)', borderRadius: 16, padding: 10, alignItems: 'center' }}>
+            <Text style={{ color: '#22c55e', fontSize: 22, fontWeight: 'bold' }}>{ready}</Text>
+            <Text style={{ color: dark ? 'rgba(34,197,94,0.7)' : '#15803d', fontSize: 10, marginTop: 2, textAlign: 'center' }}>جاهزة</Text>
+          </View>
+          <View style={{ flex: 1, backgroundColor: c.statCard4, borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)', borderRadius: 16, padding: 10, alignItems: 'center' }}>
+            <Text style={{ color: '#f97316', fontSize: 15, fontWeight: 'bold' }}>{todayTotal.toLocaleString()}</Text>
+            <Text style={{ color: dark ? 'rgba(249,115,22,0.7)' : '#c2410c', fontSize: 10, marginTop: 2, textAlign: 'center' }}>إيراد اليوم</Text>
+          </View>
         </View>
-        <View style={{ flex: 1, backgroundColor: c.statCard2, borderWidth: 1, borderColor: 'rgba(59,130,246,0.2)', borderRadius: 16, padding: 10, alignItems: 'center' }}>
-          <Text style={{ color: '#3b82f6', fontSize: 22, fontWeight: 'bold' }}>{preparing}</Text>
-          <Text style={{ color: dark ? 'rgba(59,130,246,0.7)' : '#1d4ed8', fontSize: 10, marginTop: 2, textAlign: 'center' }}>تجهيز</Text>
-        </View>
-        <View style={{ flex: 1, backgroundColor: c.statCard3, borderWidth: 1, borderColor: 'rgba(34,197,94,0.2)', borderRadius: 16, padding: 10, alignItems: 'center' }}>
-          <Text style={{ color: '#22c55e', fontSize: 22, fontWeight: 'bold' }}>{ready}</Text>
-          <Text style={{ color: dark ? 'rgba(34,197,94,0.7)' : '#15803d', fontSize: 10, marginTop: 2, textAlign: 'center' }}>جاهزة</Text>
-        </View>
-        <View style={{ flex: 1, backgroundColor: c.statCard4, borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)', borderRadius: 16, padding: 10, alignItems: 'center' }}>
-          <Text style={{ color: '#f97316', fontSize: 15, fontWeight: 'bold' }}>{todayTotal.toLocaleString()}</Text>
-          <Text style={{ color: dark ? 'rgba(249,115,22,0.7)' : '#c2410c', fontSize: 10, marginTop: 2, textAlign: 'center' }}>إيراد اليوم</Text>
-        </View>
-      </View>
+      </StaggerItem>
 
       {/* Filter Tabs */}
+      <StaggerItem index={1}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingHorizontal: 12, marginBottom: 10, flexGrow: 0 }}>
         {(['all', 'pending', 'preparing', 'ready', 'completed'] as const).map((tab) => {
           const active = filter === tab;
@@ -192,8 +196,10 @@ export default function AdminDashboardScreen() {
           );
         })}
       </ScrollView>
+      </StaggerItem>
 
       {/* Orders */}
+      <StaggerItem index={2} style={{ flex: 1 }}>
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color="#f97316" />
@@ -286,6 +292,7 @@ export default function AdminDashboardScreen() {
           )}
         </ScrollView>
       )}
+      </StaggerItem>
     </SafeAreaView>
   );
 }

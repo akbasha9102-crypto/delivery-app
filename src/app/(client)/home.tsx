@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'expo-router';
 import { useCart } from '@/context/CartContext';
 import { useDarkMode } from '@/context/ThemeContext';
+import { StaggerItem } from '@/components/stagger-item';
 
 const db = createClient(
   'https://gbmwrvnmvobvieembxmf.supabase.co',
@@ -212,6 +213,7 @@ export default function HomeScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
 
       {/* Header */}
+      <StaggerItem index={0}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: c.header, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 3 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Pressable
@@ -244,12 +246,14 @@ export default function HomeScreen() {
           </Pressable>
         </View>
       </View>
+      </StaggerItem>
 
       <ScrollView style={{ flex: 1, paddingHorizontal: 16 }} contentContainerStyle={{ paddingTop: 20, paddingBottom: cartItems.length > 0 ? 230 : 24 }}>
-        <Text style={{ fontSize: 26, fontWeight: 'bold', color: c.text, marginBottom: 18, textAlign: 'right' }}>استكشف النكهات</Text>
+        <StaggerItem index={1}>
+          <Text style={{ fontSize: 26, fontWeight: 'bold', color: c.text, marginBottom: 18, textAlign: 'right' }}>استكشف النكهات</Text>
 
-        {/* Categories */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18 }} contentContainerStyle={{ flexDirection: 'row-reverse' }}>
+          {/* Categories */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 18 }} contentContainerStyle={{ flexDirection: 'row-reverse' }}>
           {[{ id: 'all', name: 'الكل' }, ...categories].map(cat => (
             <Pressable
               key={cat.id}
@@ -264,8 +268,10 @@ export default function HomeScreen() {
               <Text style={{ fontWeight: 'bold', color: activeCategory === cat.id ? 'white' : c.subtext }}>{cat.name}</Text>
             </Pressable>
           ))}
-        </ScrollView>
+          </ScrollView>
+        </StaggerItem>
 
+        <StaggerItem index={2}>
         {/* Items Grid */}
         {filtered.length === 0 ? (
           <Text style={{ textAlign: 'center', color: c.subtext, marginTop: 80 }}>لا توجد وجبات</Text>
@@ -331,6 +337,7 @@ export default function HomeScreen() {
             })}
           </View>
         )}
+        </StaggerItem>
       </ScrollView>
 
       {/* Animated Bottom Cart Panel */}

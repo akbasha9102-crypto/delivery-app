@@ -7,6 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createClient } from '@supabase/supabase-js';
 import { useDarkMode } from '@/context/ThemeContext';
+import { StaggerItem } from '@/components/stagger-item';
 
 const db = createClient(
   'https://gbmwrvnmvobvieembxmf.supabase.co',
@@ -139,9 +140,11 @@ export default function TrackScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
-      <View style={{ paddingHorizontal: 16, paddingVertical: 14, backgroundColor: c.header, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 3 }}>
-        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#944a00', textAlign: 'center' }}>تتبع طلبك</Text>
-      </View>
+      <StaggerItem index={0}>
+        <View style={{ paddingHorizontal: 16, paddingVertical: 14, backgroundColor: c.header, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 3 }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#944a00', textAlign: 'center' }}>تتبع طلبك</Text>
+        </View>
+      </StaggerItem>
 
       <ScrollView
         style={{ flex: 1, paddingHorizontal: 16 }}
@@ -176,6 +179,7 @@ export default function TrackScreen() {
         ) : order ? (
           <>
             {/* Progress card */}
+            <StaggerItem index={1}>
             <View style={{ backgroundColor: c.card, borderRadius: 20, padding: 22, marginBottom: 14, shadowColor: '#000', shadowOpacity: dark ? 0.3 : 0.06, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: c.cardBorder }}>
               <Text style={{ fontSize: 15, fontWeight: 'bold', color: c.text, textAlign: 'right', marginBottom: 28 }}>حالة الطلب</Text>
 
@@ -222,15 +226,19 @@ export default function TrackScreen() {
                 ))}
               </View>
             </View>
+            </StaggerItem>
 
             {/* Status message */}
+            <StaggerItem index={2}>
             <View style={{ backgroundColor: c.statusCard, borderRadius: 16, paddingVertical: 18, paddingHorizontal: 20, marginBottom: 14, borderWidth: 1.5, borderColor: '#e67e22', alignItems: 'center' }}>
               <Text style={{ fontSize: 30, marginBottom: 6 }}>{STEPS[current]?.icon}</Text>
               <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#e67e22', marginBottom: 4 }}>{STEPS[current]?.label}</Text>
               <Text style={{ fontSize: 13, color: c.subtext }}>{STEPS[current]?.desc}</Text>
             </View>
+            </StaggerItem>
 
             {/* Order details */}
+            <StaggerItem index={3}>
             <View style={{ backgroundColor: c.card, borderRadius: 16, padding: 18, marginBottom: 24, shadowColor: '#000', shadowOpacity: dark ? 0.2 : 0.04, shadowRadius: 6, elevation: 1, borderWidth: 1, borderColor: c.cardBorder }}>
               <Text style={{ fontSize: 15, fontWeight: 'bold', color: c.text, textAlign: 'right', marginBottom: 14 }}>تفاصيل الطلب</Text>
               {[
@@ -244,6 +252,7 @@ export default function TrackScreen() {
                 </View>
               ))}
             </View>
+            </StaggerItem>
 
             {/* Search another order */}
             <Text style={{ color: c.subtext, fontSize: 12, textAlign: 'center', marginBottom: 10 }}>البحث بطلب آخر</Text>
