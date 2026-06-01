@@ -135,7 +135,9 @@ export default function AdminMenuScreen() {
       .insert({ item_id: editingItem.id, name: newExtraName.trim(), price })
       .select()
       .single();
-    if (!error && data) {
+    if (error) {
+      showMsg('تعذّر حفظ الإضافة: ' + error.message, false);
+    } else if (data) {
       setExtras(prev => [...prev, data]);
       setNewExtraName('');
       setNewExtraPrice('');
