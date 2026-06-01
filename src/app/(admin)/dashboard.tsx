@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
-import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, RefreshControl } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
+import { useDarkMode } from '../../context/ThemeContext';
 
 type OrderItem = { id: string; item_name: string; quantity: number; price: number };
 type Order = {
@@ -18,10 +19,10 @@ type Order = {
 };
 
 const STATUS_CONFIG = {
-  pending:   { label: 'جديد',        bg: 'bg-yellow-500', next: 'preparing', nextLabel: 'ابدأ التجهيز' },
-  preparing: { label: 'قيد التجهيز', bg: 'bg-blue-500',   next: 'ready',    nextLabel: 'جاهز للتسليم' },
-  ready:     { label: 'جاهز',        bg: 'bg-green-500',  next: 'completed', nextLabel: 'تم التسليم' },
-  completed: { label: 'مكتمل',       bg: 'bg-gray-400',   next: null,        nextLabel: '' },
+  pending:   { label: 'جديد',        next: 'preparing', nextLabel: 'ابدأ التجهيز',  dotColor: '#eab308' },
+  preparing: { label: 'قيد التجهيز', next: 'ready',    nextLabel: 'جاهز للتسليم', dotColor: '#3b82f6' },
+  ready:     { label: 'جاهز',        next: 'completed', nextLabel: 'تم التسليم',    dotColor: '#22c55e' },
+  completed: { label: 'مكتمل',       next: null,        nextLabel: '',              dotColor: '#9ca3af' },
 };
 
 function timeAgo(dateStr: string) {
@@ -33,19 +34,40 @@ function timeAgo(dateStr: string) {
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
+  const { dark, toggleDark } = useDarkMode();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'preparing' | 'ready' | 'completed'>('all');
 
+  const c = {
+    bg: dark ? '#0f172a' : '#f1f5f9',
+    header: dark ? '#1e293b' : '#ffffff',
+    headerBorder: dark ? '#334155' : '#e2e8f0',
+    card: dark ? '#1e293b' : '#ffffff',
+    cardBorder: dark ? '#334155' : '#e2e8f0',
+    cardFooter: dark ? 'rgba(15,23,42,0.5)' : 'rgba(241,245,249,0.8)',
+    itemBorder: dark ? 'rgba(51,65,85,0.5)' : '#f1f5f9',
+    text: dark ? '#f1f5f9' : '#111827',
+    subtext: dark ? '#94a3b8' : '#6b7280',
+    tabActive: dark ? '#f97316' : '#f97316',
+    tabInactive: dark ? '#1e293b' : '#ffffff',
+    tabInactiveBorder: dark ? '#334155' : '#e2e8f0',
+    tabInactiveText: dark ? '#94a3b8' : '#6b7280',
+    statCard1: dark ? 'rgba(234,179,8,0.1)' : 'rgba(234,179,8,0.08)',
+    statCard2: dark ? 'rgba(59,130,246,0.1)' : 'rgba(59,130,246,0.08)',
+    statCard3: dark ? 'rgba(34,197,94,0.1)' : 'rgba(34,197,94,0.08)',
+    statCard4: dark ? 'rgba(249,115,22,0.1)' : 'rgba(249,115,22,0.08)',
+  };
+
   const fetchOrders = useCallback(async () => {
-    const { data: ordersData } = await supabase
+    const { data: ordersData, error } = await supabase
       .from('orders')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(50);
 
-    if (!ordersData) { setLoading(false); return; }
+    if (error || !ordersData) { setLoading(false); setRefreshing(false); return; }
 
     const ordersWithItems = await Promise.all(
       ordersData.map(async (order) => {
@@ -92,134 +114,170 @@ export default function AdminDashboardScreen() {
     .reduce((s, o) => s + o.total_amount, 0);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-900">
+    <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
       {/* Header */}
-      <View className="flex-row justify-between items-center px-5 py-4 bg-gray-900 border-b border-gray-800">
-        <TouchableOpacity onPress={handleLogout} className="bg-red-500/20 px-4 py-2 rounded-xl border border-red-500/30">
-          <Text className="text-red-400 font-bold text-sm">خروج</Text>
-        </TouchableOpacity>
-        <View className="items-center">
-          <Text className="text-white text-xl font-bold">🍽️ لوحة الكاشير</Text>
-          <Text className="text-gray-400 text-xs mt-0.5">تحديث فوري</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: c.header, borderBottomWidth: 1, borderBottomColor: c.headerBorder }}>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <Pressable
+            onPress={toggleDark}
+            style={({ pressed }) => ({
+              backgroundColor: dark ? '#334155' : '#f1f5f9',
+              borderRadius: 20, padding: 8,
+              transform: [{ scale: pressed ? 0.88 : 1 }],
+            })}
+          >
+            <Text style={{ fontSize: 16 }}>{dark ? '☀️' : '🌙'}</Text>
+          </Pressable>
+          <TouchableOpacity
+            onPress={handleLogout}
+            style={{ backgroundColor: dark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.1)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)' }}
+          >
+            <Text style={{ color: '#ef4444', fontWeight: 'bold', fontSize: 13 }}>خروج</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={() => router.push('/(admin)/menu')} className="bg-orange-500/20 px-4 py-2 rounded-xl border border-orange-500/30">
-          <Text className="text-orange-400 font-bold text-sm">المنيو</Text>
+        <View style={{ alignItems: 'center' }}>
+          <Text style={{ color: c.text, fontSize: 18, fontWeight: 'bold' }}>🍽️ لوحة الكاشير</Text>
+          <Text style={{ color: c.subtext, fontSize: 11, marginTop: 2 }}>تحديث فوري</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => router.push('/(admin)/menu')}
+          style={{ backgroundColor: dark ? 'rgba(249,115,22,0.15)' : 'rgba(249,115,22,0.1)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)' }}
+        >
+          <Text style={{ color: '#f97316', fontWeight: 'bold', fontSize: 13 }}>المنيو</Text>
         </TouchableOpacity>
       </View>
 
       {/* Stats */}
-      <View className="flex-row px-4 py-4 gap-3">
-        <View className="flex-1 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-3 items-center">
-          <Text className="text-yellow-400 text-2xl font-bold">{pending}</Text>
-          <Text className="text-yellow-300/70 text-xs mt-1">طلبات جديدة</Text>
+      <View style={{ flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 12, gap: 8 }}>
+        <View style={{ flex: 1, backgroundColor: c.statCard1, borderWidth: 1, borderColor: 'rgba(234,179,8,0.2)', borderRadius: 16, padding: 10, alignItems: 'center' }}>
+          <Text style={{ color: '#eab308', fontSize: 22, fontWeight: 'bold' }}>{pending}</Text>
+          <Text style={{ color: dark ? 'rgba(234,179,8,0.7)' : '#a16207', fontSize: 10, marginTop: 2, textAlign: 'center' }}>جديدة</Text>
         </View>
-        <View className="flex-1 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-3 items-center">
-          <Text className="text-blue-400 text-2xl font-bold">{preparing}</Text>
-          <Text className="text-blue-300/70 text-xs mt-1">قيد التجهيز</Text>
+        <View style={{ flex: 1, backgroundColor: c.statCard2, borderWidth: 1, borderColor: 'rgba(59,130,246,0.2)', borderRadius: 16, padding: 10, alignItems: 'center' }}>
+          <Text style={{ color: '#3b82f6', fontSize: 22, fontWeight: 'bold' }}>{preparing}</Text>
+          <Text style={{ color: dark ? 'rgba(59,130,246,0.7)' : '#1d4ed8', fontSize: 10, marginTop: 2, textAlign: 'center' }}>تجهيز</Text>
         </View>
-        <View className="flex-1 bg-green-500/10 border border-green-500/20 rounded-2xl p-3 items-center">
-          <Text className="text-green-400 text-2xl font-bold">{ready}</Text>
-          <Text className="text-green-300/70 text-xs mt-1">جاهزة</Text>
+        <View style={{ flex: 1, backgroundColor: c.statCard3, borderWidth: 1, borderColor: 'rgba(34,197,94,0.2)', borderRadius: 16, padding: 10, alignItems: 'center' }}>
+          <Text style={{ color: '#22c55e', fontSize: 22, fontWeight: 'bold' }}>{ready}</Text>
+          <Text style={{ color: dark ? 'rgba(34,197,94,0.7)' : '#15803d', fontSize: 10, marginTop: 2, textAlign: 'center' }}>جاهزة</Text>
         </View>
-        <View className="flex-1 bg-orange-500/10 border border-orange-500/20 rounded-2xl p-3 items-center">
-          <Text className="text-orange-400 text-lg font-bold">{todayTotal.toLocaleString()}</Text>
-          <Text className="text-orange-300/70 text-xs mt-1">إيراد اليوم</Text>
+        <View style={{ flex: 1, backgroundColor: c.statCard4, borderWidth: 1, borderColor: 'rgba(249,115,22,0.2)', borderRadius: 16, padding: 10, alignItems: 'center' }}>
+          <Text style={{ color: '#f97316', fontSize: 15, fontWeight: 'bold' }}>{todayTotal.toLocaleString()}</Text>
+          <Text style={{ color: dark ? 'rgba(249,115,22,0.7)' : '#c2410c', fontSize: 10, marginTop: 2, textAlign: 'center' }}>إيراد اليوم</Text>
         </View>
       </View>
 
       {/* Filter Tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4 mb-3" style={{ flexGrow: 0 }}>
-        {(['all', 'pending', 'preparing', 'ready', 'completed'] as const).map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            onPress={() => setFilter(tab)}
-            className={`mr-2 px-4 py-2 rounded-full border ${filter === tab ? 'bg-orange-500 border-orange-500' : 'bg-gray-800 border-gray-700'}`}
-          >
-            <Text className={`text-sm font-bold ${filter === tab ? 'text-white' : 'text-gray-400'}`}>
-              {tab === 'all' ? 'الكل' : STATUS_CONFIG[tab].label}
-              {tab !== 'all' && tab !== 'completed' && orders.filter((o) => o.status === tab).length > 0
-                ? ` (${orders.filter((o) => o.status === tab).length})`
-                : ''}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingHorizontal: 12, marginBottom: 10, flexGrow: 0 }}>
+        {(['all', 'pending', 'preparing', 'ready', 'completed'] as const).map((tab) => {
+          const active = filter === tab;
+          return (
+            <TouchableOpacity
+              key={tab}
+              onPress={() => setFilter(tab)}
+              style={{
+                marginRight: 8, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+                backgroundColor: active ? '#f97316' : c.tabInactive,
+                borderWidth: 1, borderColor: active ? '#f97316' : c.tabInactiveBorder,
+              }}
+            >
+              <Text style={{ fontSize: 13, fontWeight: 'bold', color: active ? '#ffffff' : c.tabInactiveText }}>
+                {tab === 'all' ? 'الكل' : STATUS_CONFIG[tab].label}
+                {tab !== 'all' && tab !== 'completed' && orders.filter((o) => o.status === tab).length > 0
+                  ? ` (${orders.filter((o) => o.status === tab).length})`
+                  : ''}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       {/* Orders */}
       {loading ? (
-        <View className="flex-1 items-center justify-center">
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color="#f97316" />
-          <Text className="text-gray-400 mt-3">جاري تحميل الطلبات...</Text>
+          <Text style={{ color: c.subtext, marginTop: 12 }}>جاري تحميل الطلبات...</Text>
         </View>
       ) : (
         <ScrollView
-          className="flex-1 px-4"
+          style={{ flex: 1, paddingHorizontal: 12 }}
           contentContainerStyle={{ paddingBottom: 24 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchOrders(); }} tintColor="#f97316" />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => { setRefreshing(true); fetchOrders(); }}
+              tintColor="#f97316"
+              colors={['#f97316']}
+            />
+          }
         >
           {filtered.length === 0 ? (
-            <View className="flex-1 items-center justify-center mt-20">
-              <Text className="text-5xl mb-4">📋</Text>
-              <Text className="text-gray-400 text-lg">لا توجد طلبات</Text>
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 80 }}>
+              <Text style={{ fontSize: 48, marginBottom: 16 }}>📋</Text>
+              <Text style={{ color: c.subtext, fontSize: 16 }}>لا توجد طلبات</Text>
             </View>
           ) : (
             filtered.map((order) => {
               const cfg = STATUS_CONFIG[order.status];
               return (
-                <View key={order.id} className="bg-gray-800 rounded-2xl mb-4 overflow-hidden border border-gray-700">
+                <View key={order.id} style={{ backgroundColor: c.card, borderRadius: 18, marginBottom: 14, overflow: 'hidden', borderWidth: 1, borderColor: c.cardBorder }}>
+                  {/* Status bar */}
+                  <View style={{ height: 4, backgroundColor: cfg.dotColor }} />
+
                   {/* Order Header */}
-                  <View className="flex-row justify-between items-center px-4 py-3 border-b border-gray-700">
-                    <View className="flex-row items-center gap-2">
-                      <View className={`px-3 py-1 rounded-full ${cfg.bg}`}>
-                        <Text className="text-white text-xs font-bold">{cfg.label}</Text>
-                      </View>
-                      <Text className="text-gray-400 text-xs">{timeAgo(order.created_at)}</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: c.itemBorder }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: cfg.dotColor }} />
+                      <Text style={{ color: cfg.dotColor, fontWeight: 'bold', fontSize: 13 }}>{cfg.label}</Text>
+                      <Text style={{ color: c.subtext, fontSize: 11 }}>{timeAgo(order.created_at)}</Text>
                     </View>
-                    <View className="items-end">
-                      <Text className="text-white font-bold">{order.client_name}</Text>
-                      <Text className="text-gray-400 text-xs">{order.client_phone}</Text>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={{ color: c.text, fontWeight: 'bold', fontSize: 15 }}>{order.client_name}</Text>
+                      <Text style={{ color: c.subtext, fontSize: 12 }}>{order.client_phone}</Text>
                     </View>
                   </View>
 
                   {/* Order Items */}
-                  <View className="px-4 py-3">
+                  <View style={{ paddingHorizontal: 14, paddingVertical: 10 }}>
                     {order.items?.map((item) => (
-                      <View key={item.id} className="flex-row justify-between items-center py-1.5 border-b border-gray-700/50">
-                        <Text className="text-orange-400 font-bold">{(item.price * item.quantity).toLocaleString()} د.ع</Text>
-                        <View className="flex-row items-center gap-2">
-                          <Text className="text-white text-right">{item.item_name}</Text>
-                          <View className="bg-gray-700 w-7 h-7 rounded-full items-center justify-center">
-                            <Text className="text-white text-xs font-bold">{item.quantity}×</Text>
+                      <View key={item.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: c.itemBorder }}>
+                        <Text style={{ color: '#f97316', fontWeight: 'bold' }}>{(item.price * item.quantity).toLocaleString()} د.ع</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Text style={{ color: c.text, textAlign: 'right' }}>{item.item_name}</Text>
+                          <View style={{ backgroundColor: dark ? '#334155' : '#f1f5f9', width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ color: c.text, fontSize: 12, fontWeight: 'bold' }}>{item.quantity}×</Text>
                           </View>
                         </View>
                       </View>
                     ))}
 
                     {order.delivery_address ? (
-                      <Text className="text-gray-400 text-xs text-right mt-2">📍 {order.delivery_address}</Text>
+                      <Text style={{ color: c.subtext, fontSize: 12, textAlign: 'right', marginTop: 8 }}>📍 {order.delivery_address}</Text>
                     ) : null}
                     {order.client_note ? (
-                      <Text className="text-yellow-400/80 text-xs text-right mt-1">📝 {order.client_note}</Text>
+                      <Text style={{ color: '#fbbf24', fontSize: 12, textAlign: 'right', marginTop: 4 }}>📝 {order.client_note}</Text>
                     ) : null}
                   </View>
 
                   {/* Order Footer */}
-                  <View className="flex-row justify-between items-center px-4 py-3 bg-gray-900/50">
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, backgroundColor: c.cardFooter, borderTopWidth: 1, borderTopColor: c.itemBorder }}>
                     <View>
                       {cfg.next ? (
                         <TouchableOpacity
                           onPress={() => updateStatus(order.id, cfg.next!)}
-                          className="bg-orange-500 px-5 py-2.5 rounded-xl"
+                          style={{ backgroundColor: '#f97316', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12 }}
                         >
-                          <Text className="text-white font-bold text-sm">{cfg.nextLabel}</Text>
+                          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 13 }}>{cfg.nextLabel}</Text>
                         </TouchableOpacity>
                       ) : (
-                        <View className="bg-gray-700 px-5 py-2.5 rounded-xl">
-                          <Text className="text-gray-400 font-bold text-sm">✓ مكتمل</Text>
+                        <View style={{ backgroundColor: dark ? '#334155' : '#f1f5f9', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12 }}>
+                          <Text style={{ color: c.subtext, fontWeight: 'bold', fontSize: 13 }}>✓ مكتمل</Text>
                         </View>
                       )}
                     </View>
-                    <Text className="text-white text-lg font-bold">{order.total_amount.toLocaleString()} <Text className="text-gray-400 text-sm">د.ع</Text></Text>
+                    <Text style={{ color: c.text, fontSize: 17, fontWeight: 'bold' }}>
+                      {order.total_amount.toLocaleString()} <Text style={{ color: c.subtext, fontSize: 12 }}>د.ع</Text>
+                    </Text>
                   </View>
                 </View>
               );

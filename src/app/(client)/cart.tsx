@@ -1,13 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { useCart } from '../../context/CartContext';
+import { useDarkMode } from '../../context/ThemeContext';
 
 const PHONE_STORAGE_KEY = 'deliveryPhone';
 
 export default function CartScreen() {
+  const { dark } = useDarkMode();
   const { items, removeItem, clearCart, total } = useCart();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -16,10 +18,22 @@ export default function CartScreen() {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
+  const c = {
+    bg: dark ? '#0f172a' : '#f3f4f6',
+    header: dark ? '#1e293b' : '#ffffff',
+    card: dark ? '#1e293b' : '#ffffff',
+    cardBorder: dark ? '#334155' : '#f1f5f9',
+    text: dark ? '#f1f5f9' : '#111827',
+    subtext: dark ? '#94a3b8' : '#6b7280',
+    input: dark ? '#0f172a' : '#ffffff',
+    inputBorder: dark ? '#334155' : '#e5e7eb',
+    placeholder: dark ? '#64748b' : '#9ca3af',
+    summary: dark ? '#1c1917' : '#fff7ed',
+    modalBg: dark ? '#1e293b' : '#ffffff',
+  };
+
   useEffect(() => {
-    AsyncStorage.getItem(PHONE_STORAGE_KEY).then(v => {
-      if (v) setPhone(v);
-    });
+    AsyncStorage.getItem(PHONE_STORAGE_KEY).then(v => { if (v) setPhone(v); });
   }, []);
 
   const submitOrder = async () => {
@@ -75,112 +89,113 @@ export default function CartScreen() {
     setShowModal(true);
   };
 
-  return (
-    <SafeAreaView className="flex-1 bg-background">
-      {/* Confirmation Modal */}
-      <Modal
-        visible={showModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowModal(false)}
-      >
-        <View className="flex-1 justify-center items-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <View className="bg-white rounded-2xl mx-6 p-6 w-full max-w-sm shadow-xl">
-            <Text className="text-xl font-bold text-center text-[#944a00] mb-2">تأكيد رقم الهاتف</Text>
-            <Text className="text-center text-gray-500 mb-5">تأكد أن رقم هاتفك صحيح قبل إرسال الطلب</Text>
+  const inputStyle = {
+    borderWidth: 1, borderColor: c.inputBorder, borderRadius: 12,
+    paddingHorizontal: 16, paddingVertical: 12, textAlign: 'right' as const,
+    fontSize: 15, backgroundColor: c.input, color: c.text, marginBottom: 12,
+  };
 
-            <View className="bg-orange-50 border border-[#e67e22] rounded-xl px-4 py-4 mb-6 items-center">
-              <Text className="text-sm text-gray-500 mb-1">رقم هاتفك</Text>
-              <Text className="text-2xl font-bold text-[#e67e22] tracking-widest">{phone.trim()}</Text>
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
+      {/* Confirmation Modal */}
+      <Modal visible={showModal} transparent animationType="fade" onRequestClose={() => setShowModal(false)}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 24 }}>
+          <View style={{ backgroundColor: c.modalBg, borderRadius: 22, padding: 28, width: '100%', alignItems: 'center' }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', textAlign: 'center', color: '#944a00', marginBottom: 8 }}>تأكيد رقم الهاتف</Text>
+            <Text style={{ textAlign: 'center', color: c.subtext, marginBottom: 20 }}>تأكد أن رقم هاتفك صحيح قبل إرسال الطلب</Text>
+
+            <View style={{ backgroundColor: c.summary, borderRadius: 14, paddingHorizontal: 28, paddingVertical: 16, marginBottom: 24, borderWidth: 1.5, borderColor: '#e67e22', width: '100%', alignItems: 'center' }}>
+              <Text style={{ fontSize: 13, color: c.subtext, marginBottom: 4 }}>رقم هاتفك</Text>
+              <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#e67e22', letterSpacing: 2 }}>{phone.trim()}</Text>
             </View>
 
             <TouchableOpacity
               onPress={submitOrder}
-              className="bg-[#e67e22] py-3 rounded-xl items-center mb-3"
+              style={{ backgroundColor: '#e67e22', paddingVertical: 14, borderRadius: 14, alignItems: 'center', width: '100%', marginBottom: 10 }}
             >
-              <Text className="text-white font-bold text-lg">نعم، الرقم صحيح — أرسل الطلب</Text>
+              <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>نعم، الرقم صحيح — أرسل الطلب</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setShowModal(false)}
-              className="py-3 rounded-xl items-center border border-gray-200"
+              style={{ paddingVertical: 13, borderRadius: 14, alignItems: 'center', width: '100%', borderWidth: 1, borderColor: c.inputBorder }}
             >
-              <Text className="text-gray-600 font-semibold">تعديل الرقم</Text>
+              <Text style={{ color: c.subtext, fontWeight: '600', fontSize: 15 }}>تعديل الرقم</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      <View className="flex-row justify-between items-center p-4 bg-white shadow-sm z-10 border-b border-gray-100">
-        <Text className="text-xl font-bold text-[#944a00]">سلة المشتريات</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, backgroundColor: c.header, borderBottomWidth: 1, borderBottomColor: c.cardBorder, elevation: 3 }}>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#944a00' }}>سلة المشتريات</Text>
       </View>
-      <ScrollView className="flex-1 px-4 pt-4">
+
+      <ScrollView style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }} contentContainerStyle={{ paddingBottom: 32 }}>
         {items.length === 0 ? (
-          <Text className="text-center text-gray-400 mt-20">السلة فارغة</Text>
+          <Text style={{ textAlign: 'center', color: c.subtext, marginTop: 80, fontSize: 16 }}>السلة فارغة</Text>
         ) : (
           items.map(item => (
-            <View key={item.id} className="flex-row justify-between items-center bg-white p-4 rounded-xl mb-3 shadow-sm border border-gray-100">
-              <TouchableOpacity className="bg-red-100 p-2 rounded-full" onPress={() => removeItem(item.id)}>
+            <View key={item.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: c.card, padding: 16, borderRadius: 14, marginBottom: 12, borderWidth: 1, borderColor: c.cardBorder }}>
+              <TouchableOpacity
+                style={{ backgroundColor: dark ? '#450a0a' : '#fee2e2', padding: 10, borderRadius: 50 }}
+                onPress={() => removeItem(item.id)}
+              >
                 <Text>🗑️</Text>
               </TouchableOpacity>
-              <View className="flex-row items-center gap-3">
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View>
-                  <Text className="font-bold text-lg text-right">{item.name}</Text>
-                  <Text className="text-[#e67e22] text-right">{item.price.toLocaleString()} د.ع</Text>
+                  <Text style={{ fontWeight: 'bold', fontSize: 16, textAlign: 'right', color: c.text }}>{item.name}</Text>
+                  <Text style={{ color: '#e67e22', textAlign: 'right' }}>{item.price.toLocaleString()} د.ع</Text>
                 </View>
-                <View className="bg-gray-100 px-3 py-1 rounded-lg ml-2">
-                  <Text className="font-bold">{item.quantity}x</Text>
+                <View style={{ backgroundColor: dark ? '#334155' : '#f3f4f6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}>
+                  <Text style={{ fontWeight: 'bold', color: c.text }}>{item.quantity}x</Text>
                 </View>
               </View>
             </View>
           ))
         )}
 
-        <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mt-4 mb-4">
-          <Text className="font-bold text-right mb-3">معلومات الطلب</Text>
+        <View style={{ backgroundColor: c.card, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: c.cardBorder, marginTop: 8, marginBottom: 8 }}>
+          <Text style={{ fontWeight: 'bold', textAlign: 'right', color: c.text, marginBottom: 12 }}>معلومات الطلب</Text>
           <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="الاسم"
-            className="border border-gray-200 rounded-xl px-4 py-3 text-right mb-3"
+            value={name} onChangeText={setName} placeholder="الاسم"
+            placeholderTextColor={c.placeholder} style={inputStyle}
           />
           <TextInput
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="رقم الهاتف"
-            keyboardType="phone-pad"
-            className="border border-gray-200 rounded-xl px-4 py-3 text-right mb-3"
+            value={phone} onChangeText={setPhone} placeholder="رقم الهاتف"
+            placeholderTextColor={c.placeholder} keyboardType="phone-pad" style={inputStyle}
           />
           <TextInput
-            value={address}
-            onChangeText={setAddress}
-            placeholder="العنوان"
-            className="border border-gray-200 rounded-xl px-4 py-3 text-right mb-3"
+            value={address} onChangeText={setAddress} placeholder="العنوان"
+            placeholderTextColor={c.placeholder} style={inputStyle}
           />
           <TextInput
-            value={note}
-            onChangeText={setNote}
-            placeholder="ملاحظات (اختياري)"
-            className="border border-gray-200 rounded-xl px-4 py-3 text-right"
+            value={note} onChangeText={setNote} placeholder="ملاحظات (اختياري)"
+            placeholderTextColor={c.placeholder} style={{ ...inputStyle, marginBottom: 0 }}
           />
         </View>
 
-        <View className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mt-4">
-          <View className="flex-row justify-between border-t border-gray-100 pt-2 mt-2">
-            <Text className="font-bold text-lg text-[#e67e22]">{total.toLocaleString()} د.ع</Text>
-            <Text className="font-bold text-lg">الإجمالي</Text>
+        <View style={{ backgroundColor: c.card, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: c.cardBorder, marginTop: 8 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: c.cardBorder, paddingTop: 8, marginTop: 4 }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#e67e22' }}>{total.toLocaleString()} د.ع</Text>
+            <Text style={{ fontWeight: 'bold', fontSize: 18, color: c.text }}>الإجمالي</Text>
           </View>
         </View>
 
-        <TouchableOpacity
+        <Pressable
           onPress={handleConfirmOrder}
           disabled={loading}
-          className={`w-full py-4 rounded-xl items-center mt-6 mb-6 ${loading ? 'bg-gray-400' : 'bg-[#e67e22]'}`}
+          style={({ pressed }) => ({
+            width: '100%', paddingVertical: 16, borderRadius: 14, alignItems: 'center',
+            marginTop: 20, marginBottom: 8,
+            backgroundColor: loading ? '#9ca3af' : '#e67e22',
+            transform: [{ scale: pressed && !loading ? 0.97 : 1 }],
+          })}
         >
-          <Text className="text-white font-bold text-lg">
+          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 17 }}>
             {loading ? 'جاري الإرسال...' : 'تأكيد الطلب'}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );

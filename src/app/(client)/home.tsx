@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'expo-router';
 import { useCart } from '@/context/CartContext';
+import { useDarkMode } from '@/context/ThemeContext';
 
 const db = createClient(
   'https://gbmwrvnmvobvieembxmf.supabase.co',
@@ -23,11 +24,11 @@ type Item = { id: string; name: string; price: number; description: string; imag
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { dark, toggleDark } = useDarkMode();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dark, setDark] = useState(false);
   const { items: cartItems, addItem, decrementItem, removeItem, clearCart, total } = useCart();
 
   const [showExtrasModal, setShowExtrasModal] = useState(false);
@@ -214,7 +215,7 @@ export default function HomeScreen() {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: c.header, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 3 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Pressable
-            onPress={() => setDark(d => !d)}
+            onPress={toggleDark}
             style={({ pressed }) => ({
               backgroundColor: dark ? '#334155' : '#f1f5f9',
               borderRadius: 20, padding: 8,

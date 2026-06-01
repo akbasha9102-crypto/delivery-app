@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createClient } from '@supabase/supabase-js';
+import { useDarkMode } from '@/context/ThemeContext';
 
 const db = createClient(
   'https://gbmwrvnmvobvieembxmf.supabase.co',
@@ -40,12 +41,28 @@ function stepIndex(status: OrderStatus) {
 }
 
 export default function TrackScreen() {
+  const { dark } = useDarkMode();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [savedPhone, setSavedPhone] = useState('');
   const [inputPhone, setInputPhone] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+
+  const c = {
+    bg: dark ? '#0f172a' : '#fafafa',
+    header: dark ? '#1e293b' : '#ffffff',
+    card: dark ? '#1e293b' : '#ffffff',
+    cardBorder: dark ? '#334155' : '#f1f5f9',
+    text: dark ? '#f1f5f9' : '#111827',
+    subtext: dark ? '#94a3b8' : '#6b7280',
+    input: dark ? '#0f172a' : '#ffffff',
+    inputBorder: dark ? '#334155' : '#e5e7eb',
+    stepDone: '#e67e22',
+    stepEmpty: dark ? '#334155' : '#f1f5f9',
+    statusCard: dark ? '#1c1917' : '#fff7ed',
+    detailRow: dark ? '#334155' : '#f1f5f9',
+  };
 
   const fetchOrder = useCallback(async (phone: string) => {
     const savedId = await AsyncStorage.getItem(ORDER_ID_KEY);
@@ -112,7 +129,7 @@ export default function TrackScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#fafafa', alignItems: 'center', justifyContent: 'center' }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" color="#e67e22" />
       </SafeAreaView>
     );
@@ -121,8 +138,8 @@ export default function TrackScreen() {
   const current = order ? stepIndex(order.status) : -1;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fafafa' }}>
-      <View style={{ paddingHorizontal: 16, paddingVertical: 14, backgroundColor: '#ffffff', shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 3 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
+      <View style={{ paddingHorizontal: 16, paddingVertical: 14, backgroundColor: c.header, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 3 }}>
         <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#944a00', textAlign: 'center' }}>تتبع طلبك</Text>
       </View>
 
@@ -132,11 +149,10 @@ export default function TrackScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#e67e22']} tintColor="#e67e22" />}
       >
         {notFound ? (
-          /* ─── No order found ─── */
           <View style={{ alignItems: 'center', marginTop: 60 }}>
             <Text style={{ fontSize: 56, marginBottom: 16 }}>📦</Text>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#111827', marginBottom: 6, textAlign: 'center' }}>لا يوجد طلب حالي</Text>
-            <Text style={{ color: '#6b7280', textAlign: 'center', marginBottom: 32, fontSize: 14 }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: c.text, marginBottom: 6, textAlign: 'center' }}>لا يوجد طلب حالي</Text>
+            <Text style={{ color: c.subtext, textAlign: 'center', marginBottom: 32, fontSize: 14 }}>
               ابحث عن طلبك برقم هاتفك
             </Text>
             <View style={{ width: '100%', flexDirection: 'row', gap: 10 }}>
@@ -144,9 +160,10 @@ export default function TrackScreen() {
                 value={inputPhone}
                 onChangeText={setInputPhone}
                 placeholder="ادخل رقم هاتفك"
+                placeholderTextColor={dark ? '#64748b' : '#aaa'}
                 keyboardType="phone-pad"
                 textAlign="right"
-                style={{ flex: 1, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, backgroundColor: '#ffffff', color: '#111827' }}
+                style={{ flex: 1, borderWidth: 1, borderColor: c.inputBorder, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, backgroundColor: c.input, color: c.text }}
               />
               <Pressable
                 onPress={handleSearch}
@@ -157,11 +174,10 @@ export default function TrackScreen() {
             </View>
           </View>
         ) : order ? (
-          /* ─── Order found ─── */
           <>
             {/* Progress card */}
-            <View style={{ backgroundColor: '#ffffff', borderRadius: 20, padding: 22, marginBottom: 14, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}>
-              <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#111827', textAlign: 'right', marginBottom: 28 }}>حالة الطلب</Text>
+            <View style={{ backgroundColor: c.card, borderRadius: 20, padding: 22, marginBottom: 14, shadowColor: '#000', shadowOpacity: dark ? 0.3 : 0.06, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: c.cardBorder }}>
+              <Text style={{ fontSize: 15, fontWeight: 'bold', color: c.text, textAlign: 'right', marginBottom: 28 }}>حالة الطلب</Text>
 
               {/* Circles row */}
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
@@ -173,7 +189,7 @@ export default function TrackScreen() {
                       <View style={{ alignItems: 'center' }}>
                         <View style={{
                           width: 46, height: 46, borderRadius: 23,
-                          backgroundColor: done ? '#e67e22' : '#f1f5f9',
+                          backgroundColor: done ? '#e67e22' : c.stepEmpty,
                           alignItems: 'center', justifyContent: 'center',
                           borderWidth: active ? 3 : 0,
                           borderColor: active ? '#944a00' : 'transparent',
@@ -185,7 +201,7 @@ export default function TrackScreen() {
                         </View>
                       </View>
                       {idx < STEPS.length - 1 && (
-                        <View style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: idx < current ? '#e67e22' : '#f1f5f9', marginHorizontal: 2 }} />
+                        <View style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: idx < current ? '#e67e22' : c.stepEmpty, marginHorizontal: 2 }} />
                       )}
                     </React.Fragment>
                   );
@@ -197,7 +213,7 @@ export default function TrackScreen() {
                 {STEPS.map((step, idx) => (
                   <React.Fragment key={step.key}>
                     <View style={{ alignItems: 'center', width: 46 }}>
-                      <Text style={{ fontSize: 10, fontWeight: idx === current ? 'bold' : 'normal', color: idx <= current ? '#e67e22' : '#9ca3af', textAlign: 'center' }}>
+                      <Text style={{ fontSize: 10, fontWeight: idx === current ? 'bold' : 'normal', color: idx <= current ? '#e67e22' : c.subtext, textAlign: 'center' }}>
                         {step.label}
                       </Text>
                     </View>
@@ -208,37 +224,38 @@ export default function TrackScreen() {
             </View>
 
             {/* Status message */}
-            <View style={{ backgroundColor: '#fff7ed', borderRadius: 16, paddingVertical: 18, paddingHorizontal: 20, marginBottom: 14, borderWidth: 1.5, borderColor: '#e67e22', alignItems: 'center' }}>
+            <View style={{ backgroundColor: c.statusCard, borderRadius: 16, paddingVertical: 18, paddingHorizontal: 20, marginBottom: 14, borderWidth: 1.5, borderColor: '#e67e22', alignItems: 'center' }}>
               <Text style={{ fontSize: 30, marginBottom: 6 }}>{STEPS[current]?.icon}</Text>
               <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#e67e22', marginBottom: 4 }}>{STEPS[current]?.label}</Text>
-              <Text style={{ fontSize: 13, color: '#6b7280' }}>{STEPS[current]?.desc}</Text>
+              <Text style={{ fontSize: 13, color: c.subtext }}>{STEPS[current]?.desc}</Text>
             </View>
 
             {/* Order details */}
-            <View style={{ backgroundColor: '#ffffff', borderRadius: 16, padding: 18, marginBottom: 24, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#111827', textAlign: 'right', marginBottom: 14 }}>تفاصيل الطلب</Text>
+            <View style={{ backgroundColor: c.card, borderRadius: 16, padding: 18, marginBottom: 24, shadowColor: '#000', shadowOpacity: dark ? 0.2 : 0.04, shadowRadius: 6, elevation: 1, borderWidth: 1, borderColor: c.cardBorder }}>
+              <Text style={{ fontSize: 15, fontWeight: 'bold', color: c.text, textAlign: 'right', marginBottom: 14 }}>تفاصيل الطلب</Text>
               {[
                 { label: 'الاسم', value: order.client_name },
                 { label: 'العنوان', value: order.delivery_address || '—' },
                 { label: 'الإجمالي', value: `${order.total_amount.toLocaleString()} د.ع` },
               ].map(row => (
-                <View key={row.label} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+                <View key={row.label} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: c.detailRow }}>
                   <Text style={{ color: '#e67e22', fontWeight: '600', fontSize: 14 }}>{row.value}</Text>
-                  <Text style={{ color: '#6b7280', fontSize: 14 }}>{row.label}</Text>
+                  <Text style={{ color: c.subtext, fontSize: 14 }}>{row.label}</Text>
                 </View>
               ))}
             </View>
 
             {/* Search another order */}
-            <Text style={{ color: '#9ca3af', fontSize: 12, textAlign: 'center', marginBottom: 10 }}>البحث بطلب آخر</Text>
+            <Text style={{ color: c.subtext, fontSize: 12, textAlign: 'center', marginBottom: 10 }}>البحث بطلب آخر</Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TextInput
                 value={inputPhone}
                 onChangeText={setInputPhone}
                 placeholder="رقم هاتف آخر"
+                placeholderTextColor={dark ? '#64748b' : '#aaa'}
                 keyboardType="phone-pad"
                 textAlign="right"
-                style={{ flex: 1, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 11, fontSize: 14, backgroundColor: '#ffffff', color: '#111827' }}
+                style={{ flex: 1, borderWidth: 1, borderColor: c.inputBorder, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 11, fontSize: 14, backgroundColor: c.input, color: c.text }}
               />
               <Pressable
                 onPress={handleSearch}

@@ -2,6 +2,7 @@ import { Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { CartProvider } from '../context/CartContext';
+import { ThemeProvider } from '../context/ThemeContext';
 import '../global.css';
 
 export default function RootLayout() {
@@ -38,5 +39,5 @@ export default function RootLayout() {
 
   if (!initialized) return null; // Or a loading spinner
 
-  return <CartProvider><Slot /></CartProvider>;
+  return <ThemeProvider><CartProvider><Slot /></CartProvider></ThemeProvider>;
 }
