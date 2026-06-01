@@ -11,17 +11,24 @@ export default function CartScreen() {
   const { items, removeItem, clearCart, total } = useCart();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [phoneConfirm, setPhoneConfirm] = useState('');
   const [address, setAddress] = useState('');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(PHONE_STORAGE_KEY).then(v => { if (v) setPhone(v); });
+    AsyncStorage.getItem(PHONE_STORAGE_KEY).then(v => {
+      if (v) { setPhone(v); setPhoneConfirm(v); }
+    });
   }, []);
 
   const handleConfirmOrder = async () => {
     if (!name.trim() || !phone.trim()) {
       Alert.alert('الرجاء إدخال الاسم ورقم الهاتف');
+      return;
+    }
+    if (phone.trim() !== phoneConfirm.trim()) {
+      Alert.alert('رقم الهاتف غير متطابق', 'تأكد من إدخال نفس الرقم في حقل التأكيد');
       return;
     }
     if (items.length === 0) {
@@ -59,7 +66,7 @@ export default function CartScreen() {
 
       Alert.alert('✅ تم إرسال الطلب', 'سيتم التواصل معك قريباً');
       clearCart();
-      setName(''); setAddress(''); setNote('');
+      setName(''); setAddress(''); setNote(''); setPhoneConfirm('');
     } catch {
       Alert.alert('حدث خطأ', 'تأكد من الاتصال بالإنترنت وحاول مرة أخرى');
     } finally {
@@ -109,6 +116,18 @@ export default function CartScreen() {
             keyboardType="phone-pad"
             className="border border-gray-200 rounded-xl px-4 py-3 text-right mb-3"
           />
+          <TextInput
+            value={phoneConfirm}
+            onChangeText={setPhoneConfirm}
+            placeholder="تأكيد رقم الهاتف"
+            keyboardType="phone-pad"
+            className={`border rounded-xl px-4 py-3 text-right mb-3 ${
+              phoneConfirm && phone !== phoneConfirm ? 'border-red-400 bg-red-50' : 'border-gray-200'
+            }`}
+          />
+          {phoneConfirm.length > 0 && phone !== phoneConfirm && (
+            <Text className="text-red-500 text-right text-sm -mt-2 mb-3">الرقم غير متطابق</Text>
+          )}
           <TextInput
             value={address}
             onChangeText={setAddress}
