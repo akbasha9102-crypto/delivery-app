@@ -37,7 +37,7 @@ export default function HomeScreen() {
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [phoneConfirm, setPhoneConfirm] = useState('');
+  const [showPhoneConfirm, setShowPhoneConfirm] = useState(false);
   const [area, setArea] = useState('');
   const [locationDesc, setLocationDesc] = useState('');
   const [showAreaPicker, setShowAreaPicker] = useState(false);
@@ -78,7 +78,7 @@ export default function HomeScreen() {
       setLoading(false);
     }
     load();
-    AsyncStorage.getItem(PHONE_KEY).then(v => { if (v) { setPhone(v); setPhoneConfirm(v); } });
+    AsyncStorage.getItem(PHONE_KEY).then(v => { if (v) setPhone(v); });
   }, []);
 
   const filtered = activeCategory === 'all' ? items : items.filter(i => i.category_id === activeCategory);
@@ -115,19 +115,20 @@ export default function HomeScreen() {
     });
   };
 
-  const handleSend = async () => {
+  const handleConfirmPhone = () => {
     if (!name.trim() || !phone.trim()) {
       Alert.alert('الرجاء إدخال الاسم ورقم الهاتف');
-      return;
-    }
-    if (phone.trim() !== phoneConfirm.trim()) {
-      Alert.alert('رقم الهاتف غير متطابق', 'تأكد من إدخال نفس الرقم في حقل التأكيد');
       return;
     }
     if (!area) {
       Alert.alert('الرجاء اختيار منطقتك');
       return;
     }
+    setShowPhoneConfirm(true);
+  };
+
+  const handleSend = async () => {
+    setShowPhoneConfirm(false);
     setSending(true);
     try {
       await AsyncStorage.setItem(PHONE_KEY, phone.trim());
@@ -167,7 +168,7 @@ export default function HomeScreen() {
       setSelectedExtraIds(new Set());
       setAvailableExtras([]);
       clearCart();
-      setName(''); setArea(''); setLocationDesc(''); setNote(''); setPhoneConfirm('');
+      setName(''); setArea(''); setLocationDesc(''); setNote('');
       Alert.alert('✅ تم إرسال الطلب', 'سيتم التواصل معك قريباً');
     } catch {
       Alert.alert('حدث خطأ', 'تأكد من الاتصال بالإنترنت وحاول مرة أخرى');
@@ -481,14 +482,6 @@ export default function HomeScreen() {
               placeholderTextColor={dark ? '#64748b' : '#aaa'} keyboardType="phone-pad"
               style={{ borderWidth: 1, borderColor: c.panelBorder, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, textAlign: 'right', fontSize: 15, marginBottom: 12, backgroundColor: c.input, color: c.text }}
             />
-            <TextInput
-              value={phoneConfirm} onChangeText={setPhoneConfirm} placeholder="تأكيد رقم الهاتف *"
-              placeholderTextColor={dark ? '#64748b' : '#aaa'} keyboardType="phone-pad"
-              style={{ borderWidth: 1, borderColor: phoneConfirm && phone !== phoneConfirm ? '#f87171' : c.panelBorder, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, textAlign: 'right', fontSize: 15, marginBottom: phoneConfirm && phone !== phoneConfirm ? 4 : 12, backgroundColor: phoneConfirm && phone !== phoneConfirm ? (dark ? '#2d1010' : '#fff5f5') : c.input, color: c.text }}
-            />
-            {phoneConfirm.length > 0 && phone !== phoneConfirm && (
-              <Text style={{ color: '#f87171', textAlign: 'right', fontSize: 12, marginBottom: 12 }}>الرقم غير متطابق</Text>
-            )}
             {/* Area Dropdown */}
             <Pressable
               onPress={() => setShowAreaPicker(p => !p)}
@@ -555,13 +548,41 @@ export default function HomeScreen() {
             </View>
 
             <Pressable
-              onPress={handleSend} disabled={sending}
+              onPress={handleConfirmPhone} disabled={sending}
               style={({ pressed }) => ({ width: '100%', paddingVertical: 16, borderRadius: 14, alignItems: 'center', backgroundColor: sending ? '#9ca3af' : '#e67e22', transform: [{ scale: pressed && !sending ? 0.97 : 1 }] })}
             >
               <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 17 }}>{sending ? 'جاري الإرسال...' : 'ارسال الطلب'}</Text>
             </Pressable>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Phone Confirmation Modal */}
+      <Modal visible={showPhoneConfirm} transparent animationType="fade" onRequestClose={() => setShowPhoneConfirm(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+          <View style={{ backgroundColor: c.panel, borderRadius: 22, padding: 28, width: '100%', alignItems: 'center' }}>
+            <Text style={{ fontSize: 22 }}>📱</Text>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: c.text, marginTop: 12, marginBottom: 6 }}>تأكيد رقم الهاتف</Text>
+            <Text style={{ color: c.subtext, fontSize: 14, textAlign: 'center', marginBottom: 20 }}>هل رقم هاتفك صحيح؟</Text>
+            <View style={{ backgroundColor: dark ? '#0f172a' : '#fff7ed', borderRadius: 14, paddingHorizontal: 28, paddingVertical: 16, marginBottom: 24, borderWidth: 2, borderColor: '#e67e22' }}>
+              <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#e67e22', textAlign: 'center', letterSpacing: 2 }}>{phone.trim()}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+              <Pressable
+                onPress={() => setShowPhoneConfirm(false)}
+                style={({ pressed }) => ({ flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: dark ? '#334155' : '#f1f5f9', transform: [{ scale: pressed ? 0.97 : 1 }] })}
+              >
+                <Text style={{ color: c.subtext, fontWeight: 'bold', fontSize: 15 }}>تعديل</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSend}
+                style={({ pressed }) => ({ flex: 2, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#e67e22', transform: [{ scale: pressed ? 0.97 : 1 }] })}
+              >
+                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 15 }}>نعم، أرسل الطلب</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
