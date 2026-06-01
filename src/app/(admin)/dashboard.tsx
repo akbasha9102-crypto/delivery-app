@@ -64,8 +64,14 @@ export default function AdminDashboardScreen() {
 
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 15000);
-    return () => clearInterval(interval);
+  }, [fetchOrders]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('dashboard-orders-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [fetchOrders]);
 
   const updateStatus = async (orderId: string, newStatus: string) => {
@@ -94,7 +100,7 @@ export default function AdminDashboardScreen() {
         </TouchableOpacity>
         <View className="items-center">
           <Text className="text-white text-xl font-bold">🍽️ لوحة الكاشير</Text>
-          <Text className="text-gray-400 text-xs mt-0.5">تحديث كل 15 ثانية</Text>
+          <Text className="text-gray-400 text-xs mt-0.5">تحديث فوري</Text>
         </View>
         <TouchableOpacity onPress={() => router.push('/(admin)/menu')} className="bg-orange-500/20 px-4 py-2 rounded-xl border border-orange-500/30">
           <Text className="text-orange-400 font-bold text-sm">المنيو</Text>
