@@ -7,8 +7,8 @@ import { supabase } from '../../lib/supabase';
 const DEFAULT_IMAGE = 'https://via.placeholder.com/300x200.png?text=Food';
 
 type Category = { id: string; name: string };
-type Item = { id: string; category_id: string; name: string; description: string; price: number; image_url: string; is_available: boolean };
-type Extra = { id: string; item_id: string; name: string; price: number };
+type Item = { id: string; category_id: string; name: string; description: string; price: number; image_url: string; is_available: boolean; extras_json?: string };
+type Extra = { id: string; name: string; price: number };
 
 function InputField({ label, value, onChangeText, placeholder, keyboardType = 'default' }: any) {
   return (
@@ -102,7 +102,7 @@ export default function AdminMenuScreen() {
     });
     setNewExtraName('');
     setNewExtraPrice('');
-    await refreshExtras(item.id);
+    try { setExtras(JSON.parse(item.extras_json || '[]')); } catch { setExtras([]); }
   };
 
   const handleSaveEdit = async () => {
@@ -125,34 +125,29 @@ export default function AdminMenuScreen() {
     setSaving(false);
   };
 
-  const refreshExtras = async (itemId: string) => {
-    const { data, error } = await supabase
-      .from('item_extras').select('*').eq('item_id', itemId).order('created_at');
-    if (error) Alert.alert('خطأ في تحميل الإضافات', error.message);
-    setExtras(data || []);
+  const saveExtras = async (updated: Extra[]) => {
+    if (!editingItem) return;
+    const { error } = await supabase
+      .from('items')
+      .update({ extras_json: JSON.stringify(updated) })
+      .eq('id', editingItem.id);
+    if (error) Alert.alert('خطأ في الحفظ', error.message);
+    else setExtras(updated);
   };
 
   const handleAddExtra = async () => {
     if (!editingItem || !newExtraName.trim()) return;
     setSavingExtra(true);
     const price = parseFloat(newExtraPrice.replace(',', '.')) || 0;
-    const { error } = await supabase
-      .from('item_extras')
-      .insert({ item_id: editingItem.id, name: newExtraName.trim(), price });
-    if (error) {
-      Alert.alert('خطأ في حفظ الإضافة', error.message);
-    } else {
-      setNewExtraName('');
-      setNewExtraPrice('');
-      await refreshExtras(editingItem.id);
-    }
+    const newExtra: Extra = { id: Date.now().toString(), name: newExtraName.trim(), price };
+    await saveExtras([...extras, newExtra]);
+    setNewExtraName('');
+    setNewExtraPrice('');
     setSavingExtra(false);
   };
 
   const handleDeleteExtra = async (id: string) => {
-    const { error } = await supabase.from('item_extras').delete().eq('id', id);
-    if (error) Alert.alert('خطأ في الحذف', error.message);
-    else if (editingItem) await refreshExtras(editingItem.id);
+    await saveExtras(extras.filter(e => e.id !== id));
   };
 
   const toggleAvailable = async (item: Item) => {

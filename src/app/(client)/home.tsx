@@ -18,7 +18,7 @@ const db = createClient(
 const PHONE_KEY = 'deliveryPhone';
 
 type Category = { id: string; name: string };
-type Item = { id: string; name: string; price: number; description: string; image_url: string | null; category_id: string; is_available: boolean };
+type Item = { id: string; name: string; price: number; description: string; image_url: string | null; category_id: string; is_available: boolean; extras_json?: string };
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -82,31 +82,27 @@ export default function HomeScreen() {
 
   const filtered = activeCategory === 'all' ? items : items.filter(i => i.category_id === activeCategory);
 
-  const handleConfirmCart = async () => {
-    setLoadingExtras(true);
-    try {
-      const itemIds = cartItems.map(i => i.id);
-      const { data, error } = await db.from('item_extras').select('*').in('item_id', itemIds);
-      if (error) {
-        console.warn('item_extras error:', error.message);
-        setShowModal(true);
-        return;
-      }
-      if (data && data.length > 0) {
-        setAvailableExtras(data.map(e => ({
-          ...e,
-          item_name: cartItems.find(i => i.id === e.item_id)?.name || '',
-        })));
-        setSelectedExtraIds(new Set());
-        setShowExtrasModal(true);
-      } else {
-        setShowModal(true);
-      }
-    } catch (e) {
-      console.warn('handleConfirmCart error:', e);
+  const handleConfirmCart = () => {
+    const allExtras: { id: string; item_id: string; name: string; price: number; item_name: string }[] = [];
+    cartItems.forEach(cartItem => {
+      const menuItem = items.find(i => i.id === cartItem.id);
+      if (!menuItem?.extras_json) return;
+      try {
+        const parsed = JSON.parse(menuItem.extras_json);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((e: any) => {
+            allExtras.push({ id: e.id, item_id: cartItem.id, name: e.name, price: e.price || 0, item_name: cartItem.name });
+          });
+        }
+      } catch {}
+    });
+
+    if (allExtras.length > 0) {
+      setAvailableExtras(allExtras);
+      setSelectedExtraIds(new Set());
+      setShowExtrasModal(true);
+    } else {
       setShowModal(true);
-    } finally {
-      setLoadingExtras(false);
     }
   };
 
@@ -355,10 +351,9 @@ export default function HomeScreen() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: c.panelBorder, paddingTop: 12, marginTop: 6 }}>
           <Pressable
             onPress={handleConfirmCart}
-            disabled={loadingExtras}
-            style={({ pressed }) => ({ backgroundColor: '#e67e22', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14, transform: [{ scale: pressed ? 0.96 : 1 }], opacity: loadingExtras ? 0.7 : 1 })}
+            style={({ pressed }) => ({ backgroundColor: '#e67e22', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14, transform: [{ scale: pressed ? 0.96 : 1 }] })}
           >
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 15 }}>{loadingExtras ? '...' : 'تاكيد الطلب'}</Text>
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 15 }}>تاكيد الطلب</Text>
           </Pressable>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={{ fontSize: 12, color: c.subtext }}>الإجمالي</Text>
