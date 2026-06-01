@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createClient } from '@supabase/supabase-js';
+import { useRouter } from 'expo-router';
 import { useCart } from '@/context/CartContext';
 
 const db = createClient(
@@ -20,6 +21,7 @@ type Category = { id: string; name: string };
 type Item = { id: string; name: string; price: number; description: string; image_url: string | null; category_id: string; is_available: boolean };
 
 export default function HomeScreen() {
+  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
@@ -168,7 +170,19 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
-        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#944a00' }}>CulinaShare</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#944a00' }}>CulinaShare</Text>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => ({
+              backgroundColor: dark ? '#334155' : '#f1f5f9',
+              borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8,
+              transform: [{ scale: pressed ? 0.88 : 1 }],
+            })}
+          >
+            <Text style={{ fontSize: 18, color: dark ? '#f1f5f9' : '#374151' }}>→</Text>
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView style={{ flex: 1, paddingHorizontal: 16 }} contentContainerStyle={{ paddingTop: 20, paddingBottom: cartItems.length > 0 ? 230 : 24 }}>
@@ -304,7 +318,21 @@ export default function HomeScreen() {
           <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }} activeOpacity={1} onPress={() => setShowModal(false)} />
           <View style={{ backgroundColor: c.panel, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 36 }}>
             <View style={{ width: 44, height: 4, backgroundColor: c.catBorder, borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
-            <Text style={{ fontSize: 20, fontWeight: 'bold', textAlign: 'right', marginBottom: 16, color: c.text }}>تفاصيل الطلب</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: c.text }}>تفاصيل الطلب</Text>
+              <Pressable
+                onPress={() => setShowModal(false)}
+                style={({ pressed }) => ({
+                  backgroundColor: dark ? '#334155' : '#f1f5f9',
+                  borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8,
+                  flexDirection: 'row', alignItems: 'center', gap: 6,
+                  transform: [{ scale: pressed ? 0.92 : 1 }],
+                })}
+              >
+                <Text style={{ color: dark ? '#f1f5f9' : '#374151', fontSize: 15, fontWeight: '600' }}>المنيو</Text>
+                <Text style={{ color: dark ? '#f1f5f9' : '#374151', fontSize: 16 }}>←</Text>
+              </Pressable>
+            </View>
 
             <TextInput
               value={name} onChangeText={setName} placeholder="الاسم *"
