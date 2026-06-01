@@ -86,7 +86,12 @@ export default function HomeScreen() {
     setLoadingExtras(true);
     try {
       const itemIds = cartItems.map(i => i.id);
-      const { data } = await db.from('item_extras').select('*').in('item_id', itemIds);
+      const { data, error } = await db.from('item_extras').select('*').in('item_id', itemIds);
+      if (error) {
+        console.warn('item_extras error:', error.message);
+        setShowModal(true);
+        return;
+      }
       if (data && data.length > 0) {
         setAvailableExtras(data.map(e => ({
           ...e,
@@ -97,7 +102,8 @@ export default function HomeScreen() {
       } else {
         setShowModal(true);
       }
-    } catch {
+    } catch (e) {
+      console.warn('handleConfirmCart error:', e);
       setShowModal(true);
     } finally {
       setLoadingExtras(false);
