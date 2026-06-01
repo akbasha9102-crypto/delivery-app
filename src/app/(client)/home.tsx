@@ -191,13 +191,13 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
 
-          {/* Total + Next button */}
+          {/* Total + Confirm button */}
           <View className="flex-row justify-between items-center border-t border-gray-100 pt-3">
             <TouchableOpacity
               className="bg-[#e67e22] px-8 py-3 rounded-xl"
               onPress={() => setShowModal(true)}
             >
-              <Text className="text-white font-bold text-base">التالي ←</Text>
+              <Text className="text-white font-bold text-base">تاكيد الطلب</Text>
             </TouchableOpacity>
             <View className="items-end">
               <Text className="text-xs text-gray-500">الإجمالي</Text>
