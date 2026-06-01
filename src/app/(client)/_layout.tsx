@@ -15,7 +15,7 @@ export default function ClientLayout() {
         name="track"
         options={{
           title: 'تتبع طلبك',
-          tabBarIcon: ({ color }) => <MaterialIcons name="analytics" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <MaterialIcons name="local-shipping" size={24} color={color} />,
         }}
       />
       <Tabs.Screen

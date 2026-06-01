@@ -16,6 +16,7 @@ const db = createClient(
 );
 
 const PHONE_KEY = 'deliveryPhone';
+const ORDER_ID_KEY = 'lastOrderId';
 
 type Category = { id: string; name: string };
 type Item = { id: string; name: string; price: number; description: string; image_url: string | null; category_id: string; is_available: boolean; extras_json?: string };
@@ -146,6 +147,8 @@ export default function HomeScreen() {
         .single();
 
       if (error || !order) throw error;
+
+      await AsyncStorage.setItem(ORDER_ID_KEY, order.id);
 
       await db.from('order_items').insert(
         cartItems.map(i => {
