@@ -30,6 +30,7 @@ export default function HomeScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const [primaryColor, setPrimaryColor] = useState('#e67e22');
   const { items: cartItems, addItem, decrementItem, removeItem, clearCart, total } = useCart();
 
   const [showExtrasModal, setShowExtrasModal] = useState(false);
@@ -72,12 +73,14 @@ export default function HomeScreen() {
 
   useEffect(() => {
     async function load() {
-      const [{ data: cats }, { data: meals }] = await Promise.all([
+      const [{ data: cats }, { data: meals }, { data: settings }] = await Promise.all([
         db.from('categories').select('*').order('name'),
         db.from('items').select('*'),
+        db.from('restaurant_settings').select('primary_color').limit(1).single(),
       ]);
       setCategories(cats || []);
       setItems(meals || []);
+      if (settings?.primary_color) setPrimaryColor(settings.primary_color);
       setLoading(false);
     }
     load();
@@ -203,7 +206,7 @@ export default function HomeScreen() {
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color="#e67e22" />
+        <ActivityIndicator size="large" color={primaryColor} />
       </SafeAreaView>
     );
   }
@@ -228,7 +231,7 @@ export default function HomeScreen() {
             <Text style={{ fontSize: 18 }}>{dark ? '☀️' : '🌙'}</Text>
           </Pressable>
           {cartItems.length > 0 && (
-            <View style={{ backgroundColor: '#e67e22', width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ backgroundColor: primaryColor, width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>{cartItems.reduce((s, i) => s + i.quantity, 0)}</Text>
             </View>
           )}
@@ -261,8 +264,8 @@ export default function HomeScreen() {
               onPress={() => setActiveCategory(cat.id)}
               style={({ pressed }) => ({
                 paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20, marginLeft: 10,
-                backgroundColor: activeCategory === cat.id ? '#e67e22' : c.catBg,
-                borderWidth: 1, borderColor: activeCategory === cat.id ? '#e67e22' : c.catBorder,
+                backgroundColor: activeCategory === cat.id ? primaryColor : c.catBg,
+                borderWidth: 1, borderColor: activeCategory === cat.id ? primaryColor : c.catBorder,
                 transform: [{ scale: pressed ? 0.93 : 1 }],
               })}
             >
@@ -296,14 +299,14 @@ export default function HomeScreen() {
 
                   <View style={{ padding: 12, opacity: meal.is_available ? 1 : 0.5 }}>
                     <Text style={{ fontWeight: 'bold', fontSize: 14, textAlign: 'right', color: c.text, marginBottom: 2 }}>{meal.name}</Text>
-                    <Text style={{ color: '#e67e22', fontWeight: 'bold', textAlign: 'left', marginBottom: 4, fontSize: 13 }}>{meal.price.toLocaleString()} د.ع</Text>
+                    <Text style={{ color: primaryColor, fontWeight: 'bold', textAlign: 'left', marginBottom: 4, fontSize: 13 }}>{meal.price.toLocaleString()} د.ع</Text>
                     <Text style={{ color: c.subtext, fontSize: 11, textAlign: 'right', marginBottom: 10 }} numberOfLines={2}>{meal.description}</Text>
 
                     {qty > 0 ? (
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: c.qtyBg, borderRadius: 10, padding: 4 }}>
                         <Pressable
                           onPress={() => addItem({ id: meal.id, name: meal.name, price: meal.price, image_url: meal.image_url })}
-                          style={({ pressed }) => ({ backgroundColor: '#e67e22', width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.82 : 1 }] })}
+                          style={({ pressed }) => ({ backgroundColor: primaryColor, width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.82 : 1 }] })}
                         >
                           <Text style={{ color: 'white', fontSize: 22, fontWeight: 'bold', lineHeight: 26 }}>+</Text>
                         </Pressable>
@@ -322,12 +325,12 @@ export default function HomeScreen() {
                         style={({ pressed }) => ({
                           width: '100%', paddingVertical: 9, borderRadius: 10, alignItems: 'center',
                           borderWidth: 1,
-                          borderColor: meal.is_available ? '#e67e22' : c.catBorder,
+                          borderColor: meal.is_available ? primaryColor : c.catBorder,
                           backgroundColor: 'transparent',
                           transform: [{ scale: pressed && meal.is_available ? 0.94 : 1 }],
                         })}
                       >
-                        <Text style={{ fontWeight: 'bold', color: meal.is_available ? '#e67e22' : c.subtext, fontSize: 13 }}>
+                        <Text style={{ fontWeight: 'bold', color: meal.is_available ? primaryColor : c.subtext, fontSize: 13 }}>
                           {meal.is_available ? '+ أضف للسلة' : 'غير متوفر'}
                         </Text>
                       </Pressable>
@@ -359,7 +362,7 @@ export default function HomeScreen() {
                 <Text style={{ color: '#f87171', fontSize: 20 }}>×</Text>
               </TouchableOpacity>
               <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: 8 }}>
-                <Text style={{ color: '#e67e22', fontWeight: 'bold', fontSize: 13 }}>{(item.price * item.quantity).toLocaleString()} د.ع</Text>
+                <Text style={{ color: primaryColor, fontWeight: 'bold', fontSize: 13 }}>{(item.price * item.quantity).toLocaleString()} د.ع</Text>
                 <Text style={{ color: c.text, fontWeight: '500', fontSize: 13, textAlign: 'right' }}>{item.quantity}× {item.name}</Text>
               </View>
             </View>
@@ -369,13 +372,13 @@ export default function HomeScreen() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: c.panelBorder, paddingTop: 12, marginTop: 6 }}>
           <Pressable
             onPress={handleConfirmCart}
-            style={({ pressed }) => ({ backgroundColor: '#e67e22', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14, transform: [{ scale: pressed ? 0.96 : 1 }] })}
+            style={({ pressed }) => ({ backgroundColor: primaryColor, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14, transform: [{ scale: pressed ? 0.96 : 1 }] })}
           >
             <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 15 }}>تاكيد الطلب</Text>
           </Pressable>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={{ fontSize: 12, color: c.subtext }}>الإجمالي</Text>
-            <Text style={{ color: '#e67e22', fontWeight: 'bold', fontSize: 19 }}>{total.toLocaleString()} د.ع</Text>
+            <Text style={{ color: primaryColor, fontWeight: 'bold', fontSize: 19 }}>{total.toLocaleString()} د.ع</Text>
           </View>
         </View>
       </Animated.View>
@@ -401,7 +404,7 @@ export default function HomeScreen() {
                 if (itemExtras.length === 0) return null;
                 return (
                   <View key={cartItem.id} style={{ marginBottom: 16 }}>
-                    <Text style={{ color: '#e67e22', fontWeight: 'bold', textAlign: 'right', fontSize: 14, marginBottom: 8 }}>
+                    <Text style={{ color: primaryColor, fontWeight: 'bold', textAlign: 'right', fontSize: 14, marginBottom: 8 }}>
                       {cartItem.name}
                     </Text>
                     {itemExtras.map(extra => {
@@ -413,17 +416,17 @@ export default function HomeScreen() {
                           style={({ pressed }) => ({
                             flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
                             backgroundColor: selected ? (dark ? '#1c3a2a' : '#fff7ed') : (dark ? '#0f172a' : '#f8fafc'),
-                            borderWidth: 1.5, borderColor: selected ? '#e67e22' : c.panelBorder,
+                            borderWidth: 1.5, borderColor: selected ? primaryColor : c.panelBorder,
                             borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12,
                             marginBottom: 8, transform: [{ scale: pressed ? 0.97 : 1 }],
                           })}
                         >
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: selected ? '#e67e22' : c.subtext, backgroundColor: selected ? '#e67e22' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                            <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: selected ? primaryColor : c.subtext, backgroundColor: selected ? primaryColor : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
                               {selected && <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold' }}>✓</Text>}
                             </View>
                             {extra.price > 0
-                              ? <Text style={{ color: '#e67e22', fontWeight: 'bold', fontSize: 13 }}>+{extra.price.toLocaleString()} د.ع</Text>
+                              ? <Text style={{ color: primaryColor, fontWeight: 'bold', fontSize: 13 }}>+{extra.price.toLocaleString()} د.ع</Text>
                               : <Text style={{ color: c.subtext, fontSize: 13 }}>مجاني</Text>
                             }
                           </View>
@@ -439,7 +442,7 @@ export default function HomeScreen() {
             {/* Extras total + buttons */}
             {extrasTotal > 0 && (
               <View style={{ backgroundColor: c.qtyBg, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ color: '#e67e22', fontWeight: 'bold' }}>{extrasTotal.toLocaleString()} د.ع</Text>
+                <Text style={{ color: primaryColor, fontWeight: 'bold' }}>{extrasTotal.toLocaleString()} د.ع</Text>
                 <Text style={{ color: c.text, fontWeight: 'bold' }}>تكلفة الإضافات</Text>
               </View>
             )}
@@ -453,7 +456,7 @@ export default function HomeScreen() {
               </Pressable>
               <Pressable
                 onPress={() => { setShowExtrasModal(false); setShowModal(true); }}
-                style={({ pressed }) => ({ flex: 2, backgroundColor: '#e67e22', paddingVertical: 14, borderRadius: 14, alignItems: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] })}
+                style={({ pressed }) => ({ flex: 2, backgroundColor: primaryColor, paddingVertical: 14, borderRadius: 14, alignItems: 'center', transform: [{ scale: pressed ? 0.97 : 1 }] })}
               >
                 <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 15 }}>متابعة ←</Text>
               </Pressable>
@@ -498,7 +501,7 @@ export default function HomeScreen() {
             <Pressable
               onPress={() => setShowAreaPicker(p => !p)}
               style={({ pressed }) => ({
-                borderWidth: 1, borderColor: area ? '#e67e22' : c.panelBorder,
+                borderWidth: 1, borderColor: area ? primaryColor : c.panelBorder,
                 borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13,
                 backgroundColor: c.input, marginBottom: showAreaPicker ? 0 : 12,
                 flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -512,7 +515,7 @@ export default function HomeScreen() {
             </Pressable>
 
             {showAreaPicker && (
-              <View style={{ borderWidth: 1, borderTopWidth: 0, borderColor: '#e67e22', borderBottomLeftRadius: 12, borderBottomRightRadius: 12, backgroundColor: c.input, marginBottom: 12, maxHeight: 200, overflow: 'hidden' }}>
+              <View style={{ borderWidth: 1, borderTopWidth: 0, borderColor: primaryColor, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, backgroundColor: c.input, marginBottom: 12, maxHeight: 200, overflow: 'hidden' }}>
                 <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
                   {BASRA_AREAS.map((a, idx) => (
                     <Pressable
@@ -525,8 +528,8 @@ export default function HomeScreen() {
                         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
                       })}
                     >
-                      {area === a && <Text style={{ color: '#e67e22', fontSize: 16 }}>✓</Text>}
-                      <Text style={{ color: area === a ? '#e67e22' : c.text, fontWeight: area === a ? 'bold' : 'normal', fontSize: 14, textAlign: 'right', flex: 1 }}>{a}</Text>
+                      {area === a && <Text style={{ color: primaryColor, fontSize: 16 }}>✓</Text>}
+                      <Text style={{ color: area === a ? primaryColor : c.text, fontWeight: area === a ? 'bold' : 'normal', fontSize: 14, textAlign: 'right', flex: 1 }}>{a}</Text>
                     </Pressable>
                   ))}
                 </ScrollView>
@@ -556,12 +559,12 @@ export default function HomeScreen() {
                   إضافات: +{extrasTotal.toLocaleString()} د.ع
                 </Text>
               )}
-              <Text style={{ textAlign: 'right', fontWeight: 'bold', color: '#e67e22', marginTop: 6, fontSize: 15 }}>الإجمالي: {(total + extrasTotal).toLocaleString()} د.ع</Text>
+              <Text style={{ textAlign: 'right', fontWeight: 'bold', color: primaryColor, marginTop: 6, fontSize: 15 }}>الإجمالي: {(total + extrasTotal).toLocaleString()} د.ع</Text>
             </View>
 
             <Pressable
               onPress={handleConfirmPhone} disabled={sending}
-              style={({ pressed }) => ({ width: '100%', paddingVertical: 16, borderRadius: 14, alignItems: 'center', backgroundColor: sending ? '#9ca3af' : '#e67e22', transform: [{ scale: pressed && !sending ? 0.97 : 1 }] })}
+              style={({ pressed }) => ({ width: '100%', paddingVertical: 16, borderRadius: 14, alignItems: 'center', backgroundColor: sending ? '#9ca3af' : primaryColor, transform: [{ scale: pressed && !sending ? 0.97 : 1 }] })}
             >
               <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 17 }}>{sending ? 'جاري الإرسال...' : 'ارسال الطلب'}</Text>
             </Pressable>
@@ -576,8 +579,8 @@ export default function HomeScreen() {
             <Text style={{ fontSize: 22 }}>📱</Text>
             <Text style={{ fontSize: 18, fontWeight: 'bold', color: c.text, marginTop: 12, marginBottom: 6 }}>تأكيد رقم الهاتف</Text>
             <Text style={{ color: c.subtext, fontSize: 14, textAlign: 'center', marginBottom: 20 }}>هل رقم هاتفك صحيح؟</Text>
-            <View style={{ backgroundColor: dark ? '#0f172a' : '#fff7ed', borderRadius: 14, paddingHorizontal: 28, paddingVertical: 16, marginBottom: 24, borderWidth: 2, borderColor: '#e67e22' }}>
-              <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#e67e22', textAlign: 'center', letterSpacing: 2 }}>{phone.trim()}</Text>
+            <View style={{ backgroundColor: dark ? '#0f172a' : '#fff7ed', borderRadius: 14, paddingHorizontal: 28, paddingVertical: 16, marginBottom: 24, borderWidth: 2, borderColor: primaryColor }}>
+              <Text style={{ fontSize: 22, fontWeight: 'bold', color: primaryColor, textAlign: 'center', letterSpacing: 2 }}>{phone.trim()}</Text>
             </View>
             <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
               <Pressable
@@ -588,7 +591,7 @@ export default function HomeScreen() {
               </Pressable>
               <Pressable
                 onPress={handleSend}
-                style={({ pressed }) => ({ flex: 2, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: '#e67e22', transform: [{ scale: pressed ? 0.97 : 1 }] })}
+                style={({ pressed }) => ({ flex: 2, paddingVertical: 14, borderRadius: 14, alignItems: 'center', backgroundColor: primaryColor, transform: [{ scale: pressed ? 0.97 : 1 }] })}
               >
                 <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 15 }}>نعم، أرسل الطلب</Text>
               </Pressable>
