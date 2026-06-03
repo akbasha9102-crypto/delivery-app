@@ -3,36 +3,29 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshCon
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 
-let _audioCtx: AudioContext | null = null;
-
-function getAudioCtx(): AudioContext | null {
+function makeBellWavUrl(): string | null {
   if (typeof window === 'undefined') return null;
-  const Ctor = window.AudioContext || (window as any).webkitAudioContext;
-  if (!Ctor) return null;
-  if (!_audioCtx) _audioCtx = new Ctor();
-  return _audioCtx;
-}
-
-async function playOrderBell() {
-  const ctx = getAudioCtx();
-  if (!ctx) return;
   try {
-    if (ctx.state === 'suspended') await ctx.resume();
-    if (ctx.state !== 'running') return;
-    ([[660, 0, 0.15], [440, 0.35, 0.15]] as [number, number, number][]).forEach(([freq, delay, vol]) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, ctx.currentTime + delay);
-      gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + delay + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 1.2);
-      osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + 1.3);
-    });
-  } catch {}
+    const sr = 22050;
+    const dur = 0.9;
+    const n = (sr * dur) | 0;
+    const buf = new ArrayBuffer(44 + n * 2);
+    const v = new DataView(buf);
+    const ws = (o: number, s: string) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    ws(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true);
+    ws(8, 'WAVE'); ws(12, 'fmt '); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true);
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    ws(36, 'data'); v.setUint32(40, n * 2, true);
+    for (let i = 0; i < n; i++) {
+      const t = i / sr;
+      const hz = t < 0.42 ? 880 : 587;
+      const env = t < 0.42 ? Math.exp(-t * 4) : Math.exp(-(t - 0.42) * 4);
+      v.setInt16(44 + i * 2, (Math.sin(2 * Math.PI * hz * t) * env * 0.4 * 32767) | 0, true);
+    }
+    return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+  } catch { return null; }
 }
 
 type OrderItem = { id: string; item_name: string; quantity: number; price: number };
@@ -67,6 +60,34 @@ export default function LiveOrdersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [newOrderFlash, setNewOrderFlash] = useState(false);
+
+  const bellRef = useRef<HTMLAudioElement | null>(null);
+  const initialLoadDone = useRef(false);
+
+  // Setup audio element and unlock on first click
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = makeBellWavUrl();
+    if (!url) return;
+    bellRef.current = new Audio(url);
+    bellRef.current.volume = 0.8;
+
+    const unlock = () => {
+      if (!bellRef.current) return;
+      // play+pause to unlock the audio element for future non-gesture calls
+      bellRef.current.play().then(() => {
+        bellRef.current!.pause();
+        bellRef.current!.currentTime = 0;
+      }).catch(() => {});
+    };
+    document.addEventListener('click', unlock, { once: true });
+    document.addEventListener('touchstart', unlock, { once: true });
+    return () => {
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('touchstart', unlock);
+    };
+  }, []);
 
   const tabs = [
     { id: 'pending'   as const, name: 'واردة' },
@@ -102,30 +123,23 @@ export default function LiveOrdersScreen() {
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
   useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const unlock = () => {
-      const ctx = getAudioCtx();
-      if (ctx?.state === 'suspended') ctx.resume();
-    };
-    document.addEventListener('click', unlock);
-    document.addEventListener('touchstart', unlock);
-    return () => {
-      document.removeEventListener('click', unlock);
-      document.removeEventListener('touchstart', unlock);
-    };
-  }, []);
-
-  const initialLoadDone = useRef(false);
-
-  useEffect(() => {
     if (!loading) initialLoadDone.current = true;
   }, [loading]);
 
   useEffect(() => {
     const channel = supabase
-      .channel('orders-live')
+      .channel('orders-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, () => {
-        if (initialLoadDone.current) playOrderBell();
+        if (initialLoadDone.current) {
+          // Visual flash
+          setNewOrderFlash(true);
+          setTimeout(() => setNewOrderFlash(false), 3000);
+          // Sound
+          if (bellRef.current) {
+            bellRef.current.currentTime = 0;
+            bellRef.current.play().catch(() => {});
+          }
+        }
         fetchOrders();
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, fetchOrders)
@@ -148,6 +162,13 @@ export default function LiveOrdersScreen() {
       <View className="flex-row justify-center items-center p-4 bg-white shadow-sm border-b border-gray-100">
         <Text className="text-xl font-bold text-[#4f46e5]">الطلبات الحية</Text>
       </View>
+
+      {/* New order flash banner */}
+      {newOrderFlash && (
+        <View className="bg-green-500 px-4 py-3 items-center">
+          <Text className="text-white font-bold text-base">طلب جديد وصل!</Text>
+        </View>
+      )}
 
       {/* Tabs */}
       <View className="flex-row justify-center bg-white border-b border-gray-100">
