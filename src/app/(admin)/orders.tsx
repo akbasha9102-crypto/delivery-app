@@ -1,7 +1,42 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
+
+let _audioCtx: AudioContext | null = null;
+
+function getAudioCtx(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!_audioCtx) _audioCtx = new AudioCtx();
+  return _audioCtx;
+}
+
+function unlockAudio() {
+  const ctx = getAudioCtx();
+  if (ctx?.state === 'suspended') ctx.resume();
+}
+
+function playOrderBell() {
+  const ctx = getAudioCtx();
+  if (!ctx || ctx.state === 'suspended') return;
+  try {
+    ([[660, 0, 0.15], [440, 0.35, 0.15]] as [number, number, number][]).forEach(([freq, delay, vol]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+      gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + delay + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 1.2);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 1.3);
+    });
+  } catch {}
+}
 
 type OrderItem = { id: string; item_name: string; quantity: number; price: number };
 type Order = {
@@ -69,10 +104,21 @@ export default function LiveOrdersScreen() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+  const initialLoadDone = useRef(false);
+
+  useEffect(() => {
+    if (!loading) initialLoadDone.current = true;
+  }, [loading]);
+
   useEffect(() => {
     const channel = supabase
       .channel('orders-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, () => {
+        if (initialLoadDone.current) playOrderBell();
+        fetchOrders();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, fetchOrders)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'orders' }, fetchOrders)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [fetchOrders]);
@@ -87,7 +133,7 @@ export default function LiveOrdersScreen() {
   const filtered = orders.filter(o => o.status === activeTab);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-gray-50" onTouchStart={unlockAudio}>
       <View className="flex-row justify-center items-center p-4 bg-white shadow-sm border-b border-gray-100">
         <Text className="text-xl font-bold text-[#4f46e5]">الطلبات الحية</Text>
       </View>
