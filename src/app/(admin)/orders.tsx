@@ -7,21 +7,18 @@ let _audioCtx: AudioContext | null = null;
 
 function getAudioCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null;
-  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-  if (!AudioCtx) return null;
-  if (!_audioCtx) _audioCtx = new AudioCtx();
+  const Ctor = window.AudioContext || (window as any).webkitAudioContext;
+  if (!Ctor) return null;
+  if (!_audioCtx) _audioCtx = new Ctor();
   return _audioCtx;
 }
 
-function unlockAudio() {
+async function playOrderBell() {
   const ctx = getAudioCtx();
-  if (ctx?.state === 'suspended') ctx.resume();
-}
-
-function playOrderBell() {
-  const ctx = getAudioCtx();
-  if (!ctx || ctx.state === 'suspended') return;
+  if (!ctx) return;
   try {
+    if (ctx.state === 'suspended') await ctx.resume();
+    if (ctx.state !== 'running') return;
     ([[660, 0, 0.15], [440, 0.35, 0.15]] as [number, number, number][]).forEach(([freq, delay, vol]) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -104,6 +101,20 @@ export default function LiveOrdersScreen() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const unlock = () => {
+      const ctx = getAudioCtx();
+      if (ctx?.state === 'suspended') ctx.resume();
+    };
+    document.addEventListener('click', unlock);
+    document.addEventListener('touchstart', unlock);
+    return () => {
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('touchstart', unlock);
+    };
+  }, []);
+
   const initialLoadDone = useRef(false);
 
   useEffect(() => {
@@ -133,7 +144,7 @@ export default function LiveOrdersScreen() {
   const filtered = orders.filter(o => o.status === activeTab);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50" onTouchStart={unlockAudio}>
+    <SafeAreaView className="flex-1 bg-gray-50">
       <View className="flex-row justify-center items-center p-4 bg-white shadow-sm border-b border-gray-100">
         <Text className="text-xl font-bold text-[#4f46e5]">الطلبات الحية</Text>
       </View>
