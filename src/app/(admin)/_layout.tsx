@@ -35,7 +35,7 @@ export default function AdminLayout() {
   const { dark, loaded } = useDarkMode();
 
   const bellRef = useRef<HTMLAudioElement | null>(null);
-  const initialLoadDone = useRef(false);
+  const unlockedRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -44,20 +44,18 @@ export default function AdminLayout() {
     bellRef.current = new Audio(url);
     bellRef.current.volume = 0.8;
     const unlock = () => {
-      if (!bellRef.current) return;
+      if (unlockedRef.current || !bellRef.current) return;
       bellRef.current.play().then(() => {
         bellRef.current!.pause();
         bellRef.current!.currentTime = 0;
+        unlockedRef.current = true;
       }).catch(() => {});
     };
-    document.addEventListener('click', unlock, { once: true });
-    document.addEventListener('touchstart', unlock, { once: true });
-    // mark initial load done after short delay so first fetch doesn't trigger sound
-    const t = setTimeout(() => { initialLoadDone.current = true; }, 3000);
+    document.addEventListener('click', unlock);
+    document.addEventListener('touchstart', unlock);
     return () => {
       document.removeEventListener('click', unlock);
       document.removeEventListener('touchstart', unlock);
-      clearTimeout(t);
     };
   }, []);
 
@@ -65,7 +63,6 @@ export default function AdminLayout() {
     const channel = supabase
       .channel('admin-layout-orders-sound')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, () => {
-        if (!initialLoadDone.current) return;
         if (bellRef.current) {
           bellRef.current.currentTime = 0;
           bellRef.current.play().catch(() => {});
