@@ -41,22 +41,29 @@ type Order = {
   items?: OrderItem[];
 };
 
-const STATUS_CONFIG = {
-  pending:   { label: 'واردة',         bg: 'bg-yellow-500', next: 'preparing' as const, nextLabel: 'ابدأ التجهيز' },
-  preparing: { label: 'قيد التجهيز',   bg: 'bg-blue-500',   next: 'ready'    as const, nextLabel: 'جاهز للتسليم' },
-  ready:     { label: 'جاهز',          bg: 'bg-green-500',  next: 'completed' as const, nextLabel: 'تم التسليم' },
-  completed: { label: 'مكتمل',         bg: 'bg-gray-400',   next: null,                 nextLabel: '' },
+const STATUS = {
+  pending:   { label: 'واردة',        color: '#f59e0b', bg: '#fef3c7', next: 'preparing' as const, nextLabel: 'ابدأ التجهيز',  nextColor: '#3b82f6' },
+  preparing: { label: 'قيد التجهيز', color: '#3b82f6', bg: '#dbeafe', next: 'ready'     as const, nextLabel: 'جاهز للتسليم', nextColor: '#22c55e' },
+  ready:     { label: 'جاهز',        color: '#22c55e', bg: '#dcfce7', next: 'completed'  as const, nextLabel: 'تم التسليم',   nextColor: '#6b7280' },
+  completed: { label: 'مكتمل',       color: '#9ca3af', bg: '#f3f4f6', next: null,                  nextLabel: '',             nextColor: '#9ca3af' },
 };
+
+const TABS = [
+  { id: 'pending'   as const, label: 'واردة' },
+  { id: 'preparing' as const, label: 'تجهيز' },
+  { id: 'ready'     as const, label: 'جاهز' },
+  { id: 'completed' as const, label: 'مكتمل' },
+];
 
 function timeAgo(dateStr: string) {
   const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (diff < 60) return `منذ ${diff} ث`;
-  if (diff < 3600) return `منذ ${Math.floor(diff / 60)} د`;
-  return `منذ ${Math.floor(diff / 3600)} س`;
+  if (diff < 60) return `${diff} ث`;
+  if (diff < 3600) return `${Math.floor(diff / 60)} د`;
+  return `${Math.floor(diff / 3600)} س`;
 }
 
-export default function LiveOrdersScreen() {
-  const [activeTab, setActiveTab] = useState<'pending' | 'preparing' | 'ready' | 'completed'>('pending');
+export default function OrdersScreen() {
+  const [tab, setTab] = useState<'pending' | 'preparing' | 'ready' | 'completed'>('pending');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -65,17 +72,14 @@ export default function LiveOrdersScreen() {
   const bellRef = useRef<HTMLAudioElement | null>(null);
   const initialLoadDone = useRef(false);
 
-  // Setup audio element and unlock on first click
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const url = makeBellWavUrl();
     if (!url) return;
     bellRef.current = new Audio(url);
     bellRef.current.volume = 0.8;
-
     const unlock = () => {
       if (!bellRef.current) return;
-      // play+pause to unlock the audio element for future non-gesture calls
       bellRef.current.play().then(() => {
         bellRef.current!.pause();
         bellRef.current!.currentTime = 0;
@@ -89,13 +93,6 @@ export default function LiveOrdersScreen() {
     };
   }, []);
 
-  const tabs = [
-    { id: 'pending'   as const, name: 'واردة' },
-    { id: 'preparing' as const, name: 'تجهيز' },
-    { id: 'ready'     as const, name: 'جاهز' },
-    { id: 'completed' as const, name: 'مكتمل' },
-  ];
-
   const fetchOrders = useCallback(async () => {
     const { data: ordersData } = await supabase
       .from('orders')
@@ -107,14 +104,10 @@ export default function LiveOrdersScreen() {
 
     const withItems = await Promise.all(
       ordersData.map(async o => {
-        const { data: items } = await supabase
-          .from('order_items')
-          .select('*')
-          .eq('order_id', o.id);
+        const { data: items } = await supabase.from('order_items').select('*').eq('order_id', o.id);
         return { ...o, items: items || [] };
       })
     );
-
     setOrders(withItems);
     setLoading(false);
     setRefreshing(false);
@@ -131,10 +124,8 @@ export default function LiveOrdersScreen() {
       .channel('orders-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, () => {
         if (initialLoadDone.current) {
-          // Visual flash
           setNewOrderFlash(true);
-          setTimeout(() => setNewOrderFlash(false), 3000);
-          // Sound
+          setTimeout(() => setNewOrderFlash(false), 4000);
           if (bellRef.current) {
             bellRef.current.currentTime = 0;
             bellRef.current.play().catch(() => {});
@@ -149,41 +140,59 @@ export default function LiveOrdersScreen() {
   }, [fetchOrders]);
 
   const advanceStatus = async (order: Order) => {
-    const cfg = STATUS_CONFIG[order.status];
-    if (!cfg.next) return;
-    await supabase.from('orders').update({ status: cfg.next }).eq('id', order.id);
+    const next = STATUS[order.status].next;
+    if (!next) return;
+    await supabase.from('orders').update({ status: next }).eq('id', order.id);
     fetchOrders();
   };
 
-  const filtered = orders.filter(o => o.status === activeTab);
+  const filtered = orders.filter(o => o.status === tab);
+  const counts = { pending: 0, preparing: 0, ready: 0, completed: 0 };
+  orders.forEach(o => counts[o.status]++);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <View className="flex-row justify-center items-center p-4 bg-white shadow-sm border-b border-gray-100">
-        <Text className="text-xl font-bold text-[#4f46e5]">الطلبات الحية</Text>
-      </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
 
-      {/* New order flash banner */}
+      {/* New order flash */}
       {newOrderFlash && (
-        <View className="bg-green-500 px-4 py-3 items-center">
-          <Text className="text-white font-bold text-base">طلب جديد وصل!</Text>
+        <View style={{ backgroundColor: '#16a34a', paddingVertical: 14, alignItems: 'center' }}>
+          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>طلب جديد وصل!</Text>
         </View>
       )}
 
-      {/* Tabs */}
-      <View className="flex-row justify-center bg-white border-b border-gray-100">
-        {tabs.map(tab => {
-          const count = orders.filter(o => o.status === tab.id).length;
+      {/* Status tabs */}
+      <View style={{ flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e2e8f0' }}>
+        {TABS.map(t => {
+          const active = tab === t.id;
+          const count = counts[t.id];
+          const cfg = STATUS[t.id];
           return (
             <TouchableOpacity
-              key={tab.id}
-              onPress={() => setActiveTab(tab.id)}
-              className={`flex-1 py-3 items-center border-b-2 ${activeTab === tab.id ? 'border-[#4f46e5]' : 'border-transparent'}`}
+              key={t.id}
+              onPress={() => setTab(t.id)}
+              style={{
+                flex: 1,
+                paddingVertical: 14,
+                alignItems: 'center',
+                borderBottomWidth: 3,
+                borderBottomColor: active ? cfg.color : 'transparent',
+              }}
             >
-              <Text className={`font-bold text-sm ${activeTab === tab.id ? 'text-[#4f46e5]' : 'text-gray-500'}`}>{tab.name}</Text>
+              <Text style={{ fontWeight: 'bold', fontSize: 14, color: active ? cfg.color : '#94a3b8' }}>
+                {t.label}
+              </Text>
               {count > 0 && (
-                <View className={`w-5 h-5 rounded-full items-center justify-center mt-1 ${tab.id === 'pending' ? 'bg-yellow-500' : 'bg-gray-300'}`}>
-                  <Text className="text-white text-xs font-bold">{count}</Text>
+                <View style={{
+                  backgroundColor: active ? cfg.color : '#e2e8f0',
+                  borderRadius: 10,
+                  minWidth: 22,
+                  height: 22,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginTop: 4,
+                  paddingHorizontal: 6,
+                }}>
+                  <Text style={{ color: active ? '#fff' : '#64748b', fontSize: 12, fontWeight: 'bold' }}>{count}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -192,59 +201,84 @@ export default function LiveOrdersScreen() {
       </View>
 
       {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#4f46e5" />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color="#f97316" />
         </View>
       ) : (
         <ScrollView
-          className="flex-1 p-4"
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchOrders(); }} />}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 14, paddingBottom: 28 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchOrders(); }} tintColor="#f97316" colors={['#f97316']} />}
         >
           {filtered.length === 0 ? (
-            <Text className="text-center text-gray-400 mt-20">لا توجد طلبات</Text>
+            <View style={{ alignItems: 'center', marginTop: 80 }}>
+              <Text style={{ fontSize: 48, marginBottom: 12 }}>📋</Text>
+              <Text style={{ color: '#94a3b8', fontSize: 16 }}>لا توجد طلبات</Text>
+            </View>
           ) : (
             filtered.map(order => {
-              const cfg = STATUS_CONFIG[order.status];
+              const cfg = STATUS[order.status];
               return (
-                <View key={order.id} className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100">
-                  {/* Header */}
-                  <View className="flex-row justify-between mb-2 border-b border-gray-100 pb-2">
-                    <View className={`px-3 py-1 rounded-full ${cfg.bg}`}>
-                      <Text className="text-white text-xs font-bold">{cfg.label}</Text>
+                <View key={order.id} style={{ backgroundColor: '#fff', borderRadius: 16, marginBottom: 14, overflow: 'hidden', borderWidth: 1, borderColor: '#e2e8f0', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } }}>
+
+                  {/* Colored top bar */}
+                  <View style={{ height: 5, backgroundColor: cfg.color }} />
+
+                  {/* Client info + price */}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 }}>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#22c55e' }}>
+                      {order.total_amount.toLocaleString()} <Text style={{ fontSize: 12, color: '#94a3b8', fontWeight: 'normal' }}>د.ع</Text>
+                    </Text>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#0f172a' }}>{order.client_name}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                        <Text style={{ fontSize: 12, color: '#94a3b8' }}>{timeAgo(order.created_at)}</Text>
+                        <Text style={{ fontSize: 13, color: '#64748b' }}>{order.client_phone}</Text>
+                      </View>
                     </View>
-                    <Text className="text-gray-400 text-sm">{timeAgo(order.created_at)}</Text>
                   </View>
 
-                  {/* Client info */}
-                  <Text className="font-bold text-lg text-right">{order.client_name}</Text>
-                  <Text className="text-gray-600 text-right mb-1">
-                    {order.client_phone}{order.delivery_address ? ` — ${order.delivery_address}` : ''}
-                  </Text>
-                  {order.client_note && (
-                    <Text className="text-orange-600 text-right text-sm mb-1">ملاحظة: {order.client_note}</Text>
-                  )}
-
                   {/* Items */}
-                  <View className="bg-gray-50 p-2 rounded-lg mb-3">
-                    {(order.items || []).map(i => (
-                      <Text key={i.id} className="text-right text-gray-700">{i.quantity}× {i.item_name}</Text>
+                  <View style={{ marginHorizontal: 16, backgroundColor: '#f8fafc', borderRadius: 12, padding: 12, marginBottom: 10 }}>
+                    {(order.items || []).map(item => (
+                      <View key={item.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 }}>
+                        <Text style={{ fontSize: 13, color: '#f97316', fontWeight: '600' }}>{(item.price * item.quantity).toLocaleString()} د.ع</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Text style={{ fontSize: 14, color: '#1e293b', textAlign: 'right' }}>{item.item_name}</Text>
+                          <View style={{ backgroundColor: '#e2e8f0', width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#475569' }}>{item.quantity}×</Text>
+                          </View>
+                        </View>
+                      </View>
                     ))}
                   </View>
 
-                  {/* Footer */}
-                  <View className="flex-row justify-between items-center">
-                    {cfg.next ? (
-                      <TouchableOpacity
-                        className="bg-[#4f46e5] px-4 py-2 rounded-lg"
-                        onPress={() => advanceStatus(order)}
-                      >
-                        <Text className="text-white font-bold">{cfg.nextLabel}</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <View />
-                    )}
-                    <Text className="font-bold text-lg text-green-600">{order.total_amount.toLocaleString()} د.ع</Text>
-                  </View>
+                  {/* Address & note */}
+                  {(order.delivery_address || order.client_note) && (
+                    <View style={{ marginHorizontal: 16, marginBottom: 10 }}>
+                      {order.delivery_address ? (
+                        <Text style={{ color: '#64748b', fontSize: 13, textAlign: 'right' }}>📍 {order.delivery_address}</Text>
+                      ) : null}
+                      {order.client_note ? (
+                        <Text style={{ color: '#d97706', fontSize: 13, textAlign: 'right', marginTop: 4 }}>📝 {order.client_note}</Text>
+                      ) : null}
+                    </View>
+                  )}
+
+                  {/* Action button */}
+                  {cfg.next ? (
+                    <TouchableOpacity
+                      onPress={() => advanceStatus(order)}
+                      style={{ margin: 12, marginTop: 4, backgroundColor: cfg.nextColor, borderRadius: 14, paddingVertical: 16, alignItems: 'center' }}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{cfg.nextLabel}</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={{ margin: 12, marginTop: 4, backgroundColor: '#f1f5f9', borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}>
+                      <Text style={{ color: '#94a3b8', fontWeight: 'bold', fontSize: 15 }}>✓ مكتمل</Text>
+                    </View>
+                  )}
                 </View>
               );
             })

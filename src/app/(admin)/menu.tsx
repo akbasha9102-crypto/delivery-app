@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, View, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,7 +13,6 @@ type Item = { id: string; category_id: string; name: string; description: string
 type Extra = { id: string; name: string; price: number };
 
 export default function AdminMenuScreen() {
-  const router = useRouter();
   const { dark } = useDarkMode();
 
   const c = {
@@ -173,7 +171,6 @@ export default function AdminMenuScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
-
       {/* Edit Modal */}
       <Modal visible={!!editingItem} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
@@ -279,15 +276,8 @@ export default function AdminMenuScreen() {
 
       {/* Header */}
       <StaggerItem index={0}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: c.border, backgroundColor: c.surface }}>
-        <AnimatedButton
-          onPress={() => router.push('/(admin)/dashboard')}
-          style={{ backgroundColor: c.surface2, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: c.border }}
-        >
-          <Text style={{ color: c.subtext, fontWeight: 'bold' }}>← رجوع</Text>
-        </AnimatedButton>
-        <Text style={{ color: c.text, fontSize: 20, fontWeight: 'bold' }}>🍴 تعديل المنيو</Text>
-        <View style={{ width: 80 }} />
+      <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: c.border, backgroundColor: c.surface, alignItems: 'center' }}>
+        <Text style={{ color: c.text, fontSize: 20, fontWeight: 'bold' }}>تعديل المنيو</Text>
       </View>
       </StaggerItem>
 

@@ -18,37 +18,39 @@ export default function AdminLayout() {
     <View style={{ flex: 1, backgroundColor: bg }}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: '#2563eb',
+          tabBarActiveTintColor: '#f97316',
           tabBarInactiveTintColor: inactiveColor,
           headerShown: false,
           tabBarStyle: {
             backgroundColor: tabBarBg,
             borderTopColor: borderColor,
             borderTopWidth: 1,
+            height: 60,
+            paddingBottom: 8,
           },
           tabBarButton: (props) => <AnimatedTabBarButton {...props} />,
           sceneStyle: { backgroundColor: bg },
         }}
       >
         <Tabs.Screen
+          name="orders"
+          options={{
+            title: 'الطلبات',
+            tabBarIcon: ({ color }) => <MaterialIcons name="receipt-long" size={24} color={color} />,
+          }}
+        />
+        <Tabs.Screen
           name="dashboard"
           options={{
-            title: 'اللوحة',
-            tabBarIcon: ({ color }) => <MaterialIcons name="dashboard" size={24} color={color} />,
+            title: 'الإحصاء',
+            tabBarIcon: ({ color }) => <MaterialIcons name="bar-chart" size={24} color={color} />,
           }}
         />
         <Tabs.Screen
           name="menu"
           options={{
-            title: 'قائمة الطعام',
+            title: 'المنيو',
             tabBarIcon: ({ color }) => <MaterialIcons name="restaurant-menu" size={24} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="drivers"
-          options={{
-            title: 'السائقين',
-            tabBarIcon: ({ color }) => <MaterialIcons name="local-shipping" size={24} color={color} />,
           }}
         />
         <Tabs.Screen
